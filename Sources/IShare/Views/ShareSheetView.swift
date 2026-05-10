@@ -6,6 +6,7 @@ struct ShareSheetView: View {
     @ObservedObject var configStore: ConfigStore
     @EnvironmentObject var historyStore: ShareHistoryStore
     let autoStart: Bool
+    let onClose: (() -> Void)?
 
     @State private var shareItem: ShareItem
     @State private var isSharing = false
@@ -16,12 +17,11 @@ struct ShareSheetView: View {
     @State private var showEncryptionDisclosure = false
     @State private var passwordMismatch = false
 
-    @Environment(\.dismiss) private var dismiss
-
-    init(fileURL: URL, configStore: ConfigStore, autoStart: Bool = false) {
+    init(fileURL: URL, configStore: ConfigStore, autoStart: Bool = false, onClose: (() -> Void)? = nil) {
         self.fileURL = fileURL
         self.configStore = configStore
         self.autoStart = autoStart
+        self.onClose = onClose
         let isDir = (try? fileURL.resourceValues(forKeys: [.isDirectoryKey]).isDirectory) ?? false
         self._shareItem = State(initialValue: ShareItem(
             fileURL: fileURL,
@@ -144,7 +144,7 @@ struct ShareSheetView: View {
 
             HStack(spacing: 12) {
                 Button("Cancel") {
-                    dismiss()
+                    onClose?()
                 }
                 .keyboardShortcut(.escape)
 
@@ -186,7 +186,7 @@ struct ShareSheetView: View {
                     .padding(.horizontal, 20)
 
                 Button("Close") {
-                    dismiss()
+                    onClose?()
                 }
                 .padding(.bottom, 16)
             }
@@ -268,7 +268,7 @@ struct ShareSheetView: View {
             }
 
             Button("Done") {
-                dismiss()
+                onClose?()
             }
             .buttonStyle(.borderedProminent)
             .padding(.bottom, 8)

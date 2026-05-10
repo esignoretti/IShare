@@ -32,7 +32,14 @@ struct IShareApp: App {
     @State private var shareWindowController: NSWindowController?
 
     func presentShareWindow(for url: URL, autoStart: Bool) {
-        let shareView = ShareSheetView(fileURL: url, configStore: configStore, autoStart: autoStart)
+        let shareView = ShareSheetView(
+            fileURL: url,
+            configStore: configStore,
+            autoStart: autoStart,
+            onClose: {
+                NSApplication.shared.keyWindow?.close()
+            }
+        )
             .environmentObject(historyStore)
         let window = NSWindow(
             contentRect: NSRect(x: 0, y: 0, width: 400, height: 440),
