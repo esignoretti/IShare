@@ -59,7 +59,7 @@ struct IShareApp: App {
                     }
                 }
             } else {
-                ConfigView()
+                ConfigView(configStore: configStore)
                     .environmentObject(historyStore)
             }
         }
@@ -110,11 +110,19 @@ struct IShareApp: App {
     }
 
     private func openFilePicker() {
+        // Bring the app window to front before showing the panel
+        NSApplication.shared.activate(ignoringOtherApps: true)
+        if let window = NSApplication.shared.windows.first {
+            window.makeKeyAndOrderFront(nil)
+        }
+
         let panel = NSOpenPanel()
         panel.canChooseFiles = true
         panel.canChooseDirectories = true
         panel.allowsMultipleSelection = false
-        panel.title = "Select a file to share"
+        panel.title = "Select a file or folder to share"
+        panel.prompt = "Share"
+        panel.message = "Choose a file or folder to share via IShare"
 
         panel.begin { response in
             if response == .OK, let url = panel.url {
@@ -129,9 +137,6 @@ struct IShareApp: App {
 struct MainContentView: View {
     @ObservedObject var configStore: ConfigStore
     let onShareFile: (URL) -> Void
-
-    @State private var showShareSheet = false
-    @State private var shareURL: URL?
 
     var body: some View {
         VStack(spacing: 16) {
@@ -157,8 +162,7 @@ struct MainContentView: View {
                 panel.title = "Select a file to share"
                 panel.begin { response in
                     if response == .OK, let url = panel.url {
-                        shareURL = url
-                        showShareSheet = true
+                        onShareFile(url)
                     }
                 }
             } label: {
@@ -168,10 +172,5 @@ struct MainContentView: View {
             .padding(.top, 8)
         }
         .frame(width: 400, height: 320)
-        .sheet(isPresented: $showShareSheet) {
-            if let url = shareURL {
-                ShareSheetView(fileURL: url, configStore: configStore)
-            }
-        }
     }
 }

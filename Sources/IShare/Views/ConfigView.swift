@@ -1,9 +1,13 @@
 import SwiftUI
 
 struct ConfigView: View {
-    @StateObject private var configStore = ConfigStore()
+    @ObservedObject var configStore: ConfigStore
 
     @State private var endpointURL: String = ""
+
+    init(configStore: ConfigStore) {
+        self.configStore = configStore
+    }
     @State private var accessKey: String = ""
     @State private var secretKey: String = ""
     @State private var bucketName: String = ""
