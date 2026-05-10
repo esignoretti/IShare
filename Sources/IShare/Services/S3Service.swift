@@ -43,38 +43,69 @@ struct S3Service {
         return components.url
     }
 
-    private func makeRequest(path: String, method: String, body: Data? = nil) -> URLRequest? {
-        guard let base = baseURL else { return nil }
-        let url = base.appendingPathComponent(path)
-        var request = URLRequest(url: url)
-        request.httpMethod = method
-        request.setValue(config.bucketName, forHTTPHeaderField: "x-amz-bucket")
+    private func signRequest(_ request: inout URLRequest, body: Data? = nil) {
+        let now = Date()
+        let amzDate = sigV4AmzDate(from: now)
+        let dateStamp = sigV4DateStamp(from: now)
+        let bodyData = body ?? request.httpBody ?? Data()
+        let payloadHash = bodyData.sha256.hexString
 
-        let dateString = ISO8601DateFormatter().string(from: Date())
-        request.setValue(dateString, forHTTPHeaderField: "Date")
+        guard let url = request.url,
+              let host = url.host,
+              let urlComponents = URLComponents(url: url, resolvingAgainstBaseURL: false) else { return }
 
-        if let body = body {
-            request.httpBody = body
-            request.setValue("\(body.count)", forHTTPHeaderField: "Content-Length")
-        }
+        let canonicalURI = urlComponents.path.isEmpty ? "/" : urlComponents.path
+        let canonicalQueryString = urlComponents.percentEncodedQuery ?? ""
+        let canonicalHeaders = "host:\(host)\n"
+        let signedHeaders = "host"
+        let credentialScope = "\(dateStamp)/\(config.region)/s3/aws4_request"
 
-        return request
+        let canonicalRequest = [
+            request.httpMethod ?? "GET",
+            canonicalURI,
+            canonicalQueryString,
+            canonicalHeaders,
+            signedHeaders,
+            payloadHash
+        ].joined(separator: "\n")
+
+        let stringToSign = [
+            "AWS4-HMAC-SHA256",
+            amzDate,
+            credentialScope,
+            canonicalRequest.sha256Hex
+        ].joined(separator: "\n")
+
+        let signingKey = sigV4SigningKey(
+            secretKey: config.secretKey,
+            dateStamp: dateStamp,
+            region: config.region,
+            service: "s3"
+        )
+        let signature = stringToSign.hmacSHA256(key: signingKey).hexString
+
+        request.setValue(amzDate, forHTTPHeaderField: "X-Amz-Date")
+        request.setValue(payloadHash, forHTTPHeaderField: "x-amz-content-sha256")
+        request.setValue(
+            "AWS4-HMAC-SHA256 Credential=\(config.accessKey)/\(credentialScope), SignedHeaders=\(signedHeaders), Signature=\(signature)",
+            forHTTPHeaderField: "Authorization"
+        )
     }
+
+    // MARK: - Connection
 
     func testConnection() async -> Result<[String], S3Error> {
         guard config.isValid else {
             return .failure(.invalidConfig("All credential fields must be non-empty"))
         }
 
-        // List all buckets via GET /
         guard let base = baseURL else {
             return .failure(.connectionFailed("Invalid endpoint URL"))
         }
 
         var request = URLRequest(url: base)
         request.httpMethod = "GET"
-        request.setValue(config.accessKey, forHTTPHeaderField: "x-amz-access-key")
-        request.setValue(ISO8601DateFormatter().string(from: Date()), forHTTPHeaderField: "Date")
+        signRequest(&request)
 
         do {
             let (data, response) = try await URLSession.shared.data(for: request)
@@ -83,7 +114,6 @@ struct S3Service {
             }
 
             if httpResponse.statusCode == 200 {
-                // Parse bucket names from response XML
                 let xml = String(data: data, encoding: .utf8) ?? ""
                 let bucketNames = parseBucketNames(from: xml)
                 return .success(bucketNames)
@@ -107,6 +137,8 @@ struct S3Service {
         }
     }
 
+    // MARK: - Bucket Operations
+
     func bucketExists() async -> Result<Bool, S3Error> {
         guard config.isValid else {
             return .failure(.invalidConfig("All credential fields must be non-empty"))
@@ -119,8 +151,7 @@ struct S3Service {
         let url = base.appendingPathComponent(config.bucketName)
         var request = URLRequest(url: url)
         request.httpMethod = "HEAD"
-        request.setValue(config.accessKey, forHTTPHeaderField: "x-amz-access-key")
-        request.setValue(ISO8601DateFormatter().string(from: Date()), forHTTPHeaderField: "Date")
+        signRequest(&request)
 
         do {
             let (_, response) = try await URLSession.shared.data(for: request)
@@ -150,18 +181,18 @@ struct S3Service {
         let url = base.appendingPathComponent(config.bucketName)
         var request = URLRequest(url: url)
         request.httpMethod = "PUT"
-        request.setValue(config.accessKey, forHTTPHeaderField: "x-amz-access-key")
-        request.setValue(ISO8601DateFormatter().string(from: Date()), forHTTPHeaderField: "Date")
 
         if config.region != "us-east-1" {
-            let locationConstraintXML = """
+            let xml = """
             <CreateBucketConfiguration xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
                 <LocationConstraint>\(config.region)</LocationConstraint>
             </CreateBucketConfiguration>
             """
-            request.httpBody = locationConstraintXML.data(using: .utf8)
+            request.httpBody = xml.data(using: .utf8)
             request.setValue("application/xml", forHTTPHeaderField: "Content-Type")
         }
+
+        signRequest(&request)
 
         do {
             let (_, response) = try await URLSession.shared.data(for: request)
@@ -223,10 +254,9 @@ struct S3Service {
         var request = URLRequest(url: url)
         request.httpMethod = "PUT"
         request.httpBody = fileData
-        request.setValue(config.accessKey, forHTTPHeaderField: "x-amz-access-key")
-        request.setValue(ISO8601DateFormatter().string(from: Date()), forHTTPHeaderField: "Date")
         request.setValue("application/octet-stream", forHTTPHeaderField: "Content-Type")
         request.setValue("\(fileData.count)", forHTTPHeaderField: "Content-Length")
+        signRequest(&request)
 
         do {
             let (_, response) = try await URLSession.shared.data(for: request)
@@ -351,8 +381,7 @@ struct S3Service {
         let url = base.appendingPathComponent(config.bucketName).appendingPathComponent(objectKey)
         var request = URLRequest(url: url)
         request.httpMethod = "DELETE"
-        request.setValue(config.accessKey, forHTTPHeaderField: "x-amz-access-key")
-        request.setValue(ISO8601DateFormatter().string(from: Date()), forHTTPHeaderField: "Date")
+        signRequest(&request)
 
         do {
             let (_, response) = try await URLSession.shared.data(for: request)
@@ -434,10 +463,9 @@ struct S3Service {
         var request = URLRequest(url: lifecycleURL)
         request.httpMethod = "PUT"
         request.httpBody = xmlData
-        request.setValue(config.accessKey, forHTTPHeaderField: "x-amz-access-key")
-        request.setValue(ISO8601DateFormatter().string(from: Date()), forHTTPHeaderField: "Date")
         request.setValue("application/xml", forHTTPHeaderField: "Content-Type")
         request.setValue("\(xmlData.count)", forHTTPHeaderField: "Content-Length")
+        signRequest(&request)
 
         do {
             let (_, response) = try await URLSession.shared.data(for: request)
