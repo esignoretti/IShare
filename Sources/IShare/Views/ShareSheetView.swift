@@ -56,7 +56,7 @@ struct ShareSheetView: View {
                 shareOptionsView
             }
         }
-        .frame(minWidth: 400, minHeight: 360)
+        .frame(width: 400, height: 420)
         .onAppear {
             if autoStart && !isSharing && !showSuccess {
                 Task { await startShare() }
