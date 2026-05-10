@@ -5,7 +5,7 @@
 See: `.planning/PROJECT.md` (updated 2026-05-10)
 
 **Core value:** Users can share any file or directory from Finder in seconds
-**Current focus:** Phase 5 — Menu Bar Tray
+**Current focus:** Phase 6 — Distribution
 
 ## Phase Progress
 
@@ -15,20 +15,20 @@ See: `.planning/PROJECT.md` (updated 2026-05-10)
 | 2 — Core Share Flow | ✓ Complete | 3/3 | 100% |
 | 3 — Lifecycle & Email Notification | ✓ Complete | 2/2 | 100% |
 | 4 — Password Encryption | ✓ Complete | 2/2 | 100% |
-| 5 — Menu Bar Tray | ● Planned | 2/2 | 0% |
+| 5 — Menu Bar Tray | ✓ Complete | 2/2 | 100% |
 | 6 — Distribution | ○ Pending | 0/0 | 0% |
 
-Progress: ████████████████████ 66%
+Progress: ██████████████████████████ 83%
 
 ## Current Phase
 
 **Phase 5: Menu Bar Tray** — Persistent tray list with copy-link and delete
 
-Status: Planned
+Status: Complete
 
 ## Recent Activity
 
-- 2026-05-10: Phase 5 planned — ShareRecord model + ShareHistoryStore persistence + S3Service.deleteFile + MenuBarTrayView + MenuBarExtra integration (2 plans, 2 waves)
+- 2026-05-10: Phase 5 executed — SharedFileRecord, ShareHistoryStore, S3Service.deleteFile, MenuBarTrayView, MenuBarExtra integration
 - 2026-05-10: Phase 4 executed — openssl AES-256-CBC encryption, encryption UI, SHAR-11 compliance
 - 2026-05-10: Phase 3 executed — lifecycle rules + recipient notification + system mail integration
 - 2026-05-10: Phase 2 executed — HMAC/SigV4, upload/download URLs, zip compression, ShareSheetView, Finder Services integration
@@ -37,4 +37,4 @@ Status: Planned
 
 ## Next Action
 
-`/gsd-execute-phase 5` — Execute the Menu Bar Tray phase
+`/gsd-plan-phase 6` — Plan the Distribution phase
