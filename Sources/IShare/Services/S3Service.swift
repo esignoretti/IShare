@@ -5,6 +5,9 @@ enum S3Error: Error, LocalizedError {
     case connectionFailed(String)
     case bucketCheckFailed(String)
     case bucketCreationFailed(String)
+    case uploadFailed(String)
+    case presignFailed(String)
+    case signingFailed(String)
     case unexpected(Error)
 
     var errorDescription: String? {
@@ -13,6 +16,9 @@ enum S3Error: Error, LocalizedError {
         case .connectionFailed(let msg): return "Connection failed: \(msg)"
         case .bucketCheckFailed(let msg): return "Bucket check failed: \(msg)"
         case .bucketCreationFailed(let msg): return "Bucket creation failed: \(msg)"
+        case .uploadFailed(let msg): return "Upload failed: \(msg)"
+        case .presignFailed(let msg): return "Pre-signed URL generation failed: \(msg)"
+        case .signingFailed(let msg): return "Signing failed: \(msg)"
         case .unexpected(let err): return "Unexpected error: \(err.localizedDescription)"
         }
     }
@@ -185,6 +191,146 @@ struct S3Service {
         case .failure(let error):
             return .failure(error)
         }
+    }
+
+    // MARK: - File Upload
+
+    func uploadFile(
+        fileURL: URL,
+        duration: String,
+        progressHandler: (@Sendable (Double) -> Void)? = nil
+    ) async -> Result<String, S3Error> {
+        guard config.isValid else {
+            return .failure(.invalidConfig("All credential fields must be non-empty"))
+        }
+
+        guard let base = baseURL else {
+            return .failure(.connectionFailed("Invalid endpoint URL"))
+        }
+
+        let filename = fileURL.lastPathComponent
+        let objectKey = "shares/\(duration)/\(filename)"
+        let url = base.appendingPathComponent(config.bucketName).appendingPathComponent(objectKey)
+
+        guard let fileData = try? Data(contentsOf: fileURL) else {
+            return .failure(.uploadFailed("Cannot read file at \(fileURL.path)"))
+        }
+
+        var request = URLRequest(url: url)
+        request.httpMethod = "PUT"
+        request.httpBody = fileData
+        request.setValue(config.accessKey, forHTTPHeaderField: "x-amz-access-key")
+        request.setValue(ISO8601DateFormatter().string(from: Date()), forHTTPHeaderField: "Date")
+        request.setValue("application/octet-stream", forHTTPHeaderField: "Content-Type")
+        request.setValue("\(fileData.count)", forHTTPHeaderField: "Content-Length")
+
+        do {
+            let (_, response) = try await URLSession.shared.data(for: request)
+            guard let httpResponse = response as? HTTPURLResponse else {
+                return .failure(.uploadFailed("Invalid response"))
+            }
+
+            guard (200...299).contains(httpResponse.statusCode) else {
+                return .failure(.uploadFailed("HTTP \(httpResponse.statusCode)"))
+            }
+
+            progressHandler?(1.0)
+            return .success(objectKey)
+        } catch {
+            return .failure(.uploadFailed(error.localizedDescription))
+        }
+    }
+
+    // MARK: - Pre-signed URL Generation (SigV4)
+
+    func generatePresignedURL(objectKey: String, durationSeconds: Int) -> Result<String, S3Error> {
+        guard config.isValid else {
+            return .failure(.invalidConfig("All credential fields must be non-empty"))
+        }
+
+        guard let base = baseURL,
+              var components = URLComponents(url: base, resolvingAgainstBaseURL: false) else {
+            return .failure(.presignFailed("Invalid endpoint URL"))
+        }
+
+        components.path = "/\(config.bucketName)/\(objectKey)"
+
+        let now = Date()
+        let amzDate = sigV4AmzDate(from: now)
+        let dateStamp = sigV4DateStamp(from: now)
+        let region = config.region
+        let service = "s3"
+        let algorithm = "AWS4-HMAC-SHA256"
+
+        guard let host = components.host else {
+            return .failure(.presignFailed("Cannot extract host from endpoint URL"))
+        }
+
+        let credentialScope = "\(dateStamp)/\(region)/\(service)/aws4_request"
+        let credential = "\(config.accessKey)/\(credentialScope)"
+
+        var queryItems: [URLQueryItem] = [
+            URLQueryItem(name: "X-Amz-Algorithm", value: algorithm),
+            URLQueryItem(name: "X-Amz-Credential", value: credential),
+            URLQueryItem(name: "X-Amz-Date", value: amzDate),
+            URLQueryItem(name: "X-Amz-Expires", value: "\(durationSeconds)"),
+            URLQueryItem(name: "X-Amz-SignedHeaders", value: "host"),
+        ]
+
+        queryItems.sort { $0.name < $1.name || ($0.name == $1.name && ($0.value ?? "") < ($1.value ?? "")) }
+
+        let canonicalQueryString = queryItems
+            .compactMap { item -> String? in
+                guard let value = item.value else { return nil }
+                return "\(item.name.uriEncoded)=\(value.uriEncoded)"
+            }
+            .joined(separator: "&")
+
+        let canonicalURI = components.path
+        let canonicalHeaders = "host:\(host)\n"
+        let signedHeaders = "host"
+        let payloadHash = "UNSIGNED-PAYLOAD"
+
+        let canonicalRequest = [
+            "GET",
+            canonicalURI,
+            canonicalQueryString,
+            canonicalHeaders,
+            signedHeaders,
+            payloadHash
+        ].joined(separator: "\n")
+
+        let stringToSign = [
+            algorithm,
+            amzDate,
+            credentialScope,
+            canonicalRequest.sha256Hex
+        ].joined(separator: "\n")
+
+        let signingKey = sigV4SigningKey(
+            secretKey: config.secretKey,
+            dateStamp: dateStamp,
+            region: region,
+            service: service
+        )
+        let signature = stringToSign.hmacSHA256(key: signingKey).hexString
+
+        var finalQueryItems = queryItems
+        finalQueryItems.append(URLQueryItem(name: "X-Amz-Signature", value: signature))
+        components.percentEncodedQuery = finalQueryItems
+            .compactMap { item -> String? in
+                guard let value = item.value else { return nil }
+                let encodedName = item.name.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? item.name
+                let encodedValue = value.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? value
+                return "\(encodedName)=\(encodedValue)"
+            }
+            .joined(separator: "&")
+
+        guard let presignedURL = components.url else {
+            return .failure(.presignFailed("Failed to construct URL"))
+        }
+
+        return .success(presignedURL.absoluteString)
     }
 
     // MARK: - XML Parsing

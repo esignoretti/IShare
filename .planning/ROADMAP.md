@@ -27,21 +27,27 @@
 5. User can edit/reconfigure credentials from settings
 
 Plans:
-- [ ] 01-01-PLAN.md — Project scaffold, S3Config model, Keychain + UserDefaults persistence
-- [ ] 01-02-PLAN.md — S3Service with custom endpoint, connection test, bucket auto-creation
-- [ ] 01-03-PLAN.md — ConfigView UI, ConnectionStatusView, SettingsView, app lifecycle wiring
+- [x] 01-01-PLAN.md — Project scaffold, S3Config model, Keychain + UserDefaults persistence
+- [x] 01-02-PLAN.md — S3Service with custom endpoint, connection test, bucket auto-creation
+- [x] 01-03-PLAN.md — ConfigView UI, ConnectionStatusView, SettingsView, app lifecycle wiring
 
 ### Phase 2: Core Share Flow
 **Goal:** Upload files with duration, copy pre-signed URL
 **Requirements:** SHAR-01, SHAR-02, SHAR-03, SHAR-04, SHAR-07, SHAR-08
+**Plans:** 3 plans in 3 waves
 **Success Criteria:**
-1. Right-clicking a file in Finder shows "Share with IShare" in Quick Actions
+1. Right-clicking a file in Finder shows "Share with IShare" in Services
 2. User is presented with duration picker and optional compression toggle
 3. Directories are always compressed to zip before upload
 4. Single files respect the "compress?" toggle
 5. File uploads to `shares/{duration}/{filename}` on DS3
 6. Pre-signed URL is generated and automatically copied to clipboard
 7. User sees a success notification after upload
+
+Plans:
+- [ ] 02-01-PLAN.md — S3 upload + SigV4 pre-signed URL generation
+- [ ] 02-02-PLAN.md — ShareItem model, zip compression, duration picker UI, share sheet
+- [ ] 02-03-PLAN.md — Finder Services integration, NSApplicationDelegate, auto-start, cleanup
 
 ### Phase 3: Lifecycle & Email Notification
 **Goal:** S3 lifecycle rules clean up expired files; system mail notifies recipient
