@@ -37,6 +37,8 @@ final class ShareWindowManager: NSObject, NSWindowDelegate {
             defer: false
         )
         window.title = "Share File"
+        window.isReleasedWhenClosed = false
+        window.animationBehavior = .none
         window.delegate = self
 
         let shareView = ShareSheetView(
@@ -44,7 +46,7 @@ final class ShareWindowManager: NSObject, NSWindowDelegate {
             configStore: configStore,
             autoStart: true,
             onClose: { [weak window] in
-                DispatchQueue.main.async { window?.close() }
+                window?.close()
             }
         )
         .environmentObject(historyStore)
