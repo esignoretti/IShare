@@ -1,10 +1,36 @@
 import SwiftUI
 
+extension Notification.Name {
+    static let shareFileReceived = Notification.Name("com.isare.shareFileReceived")
+}
+
+class AppDelegate: NSObject, NSApplicationDelegate {
+    func application(_ sender: NSApplication, openFiles filenames: [String]) {
+        guard let firstPath = filenames.first else { return }
+
+        let url = URL(fileURLWithPath: firstPath)
+
+        guard FileManager.default.fileExists(atPath: url.path) else { return }
+
+        DispatchQueue.main.async {
+            NotificationCenter.default.post(
+                name: .shareFileReceived,
+                object: nil,
+                userInfo: ["fileURL": url]
+            )
+        }
+
+        NSApplication.shared.activate(ignoringOtherApps: true)
+    }
+}
+
 @main
 struct IShareApp: App {
+    @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
     @StateObject private var configStore = ConfigStore()
     @State private var showShareSheet = false
     @State private var pendingFileURL: URL?
+    @State private var autoStartShare = false
 
     var body: some Scene {
         WindowGroup {
@@ -13,13 +39,21 @@ struct IShareApp: App {
                     configStore: configStore,
                     onShareFile: { url in
                         pendingFileURL = url
+                        autoStartShare = false
                         showShareSheet = true
                     }
                 )
                 .environmentObject(configStore)
                 .sheet(isPresented: $showShareSheet) {
                     if let url = pendingFileURL {
-                        ShareSheetView(fileURL: url, configStore: configStore)
+                        ShareSheetView(fileURL: url, configStore: configStore, autoStart: autoStartShare)
+                    }
+                }
+                .onReceive(NotificationCenter.default.publisher(for: .shareFileReceived)) { notification in
+                    if let url = notification.userInfo?["fileURL"] as? URL {
+                        pendingFileURL = url
+                        autoStartShare = true
+                        showShareSheet = true
                     }
                 }
             } else {
@@ -70,6 +104,7 @@ struct IShareApp: App {
         panel.begin { response in
             if response == .OK, let url = panel.url {
                 pendingFileURL = url
+                autoStartShare = false
                 showShareSheet = true
             }
         }
