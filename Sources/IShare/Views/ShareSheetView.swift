@@ -4,6 +4,7 @@ import AppKit
 struct ShareSheetView: View {
     let fileURL: URL
     @ObservedObject var configStore: ConfigStore
+    @EnvironmentObject var historyStore: ShareHistoryStore
     let autoStart: Bool
 
     @State private var shareItem: ShareItem
@@ -281,7 +282,7 @@ struct ShareSheetView: View {
         isSharing = true
 
         let s3Service = S3Service(config: configStore.config)
-        let shareService = ShareService(s3Service: s3Service)
+        let shareService = ShareService(s3Service: s3Service, shareHistoryStore: historyStore)
 
         let result = await shareService.share(shareItem) { updatedItem in
             Task { @MainActor in

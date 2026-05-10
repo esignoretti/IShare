@@ -28,6 +28,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 struct IShareApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
     @StateObject private var configStore = ConfigStore()
+    @StateObject private var historyStore = ShareHistoryStore()
     @State private var showShareSheet = false
     @State private var pendingFileURL: URL?
     @State private var autoStartShare = false
@@ -44,6 +45,7 @@ struct IShareApp: App {
                     }
                 )
                 .environmentObject(configStore)
+                .environmentObject(historyStore)
                 .sheet(isPresented: $showShareSheet) {
                     if let url = pendingFileURL {
                         ShareSheetView(fileURL: url, configStore: configStore, autoStart: autoStartShare)
@@ -58,6 +60,7 @@ struct IShareApp: App {
                 }
             } else {
                 ConfigView()
+                    .environmentObject(historyStore)
             }
         }
         .windowResizability(.contentSize)
@@ -77,6 +80,18 @@ struct IShareApp: App {
                 .keyboardShortcut("n", modifiers: [.command, .shift])
             }
         }
+
+        MenuBarExtra {
+            let s3Service = S3Service(config: configStore.config)
+            MenuBarTrayView(
+                historyStore: historyStore,
+                s3Service: s3Service,
+                onBadgeUpdate: { _ in }
+            )
+        } label: {
+            Image(systemName: "square.and.arrow.up")
+        }
+        .menuBarExtraStyle(.window)
     }
 
     private func openSettings() {
