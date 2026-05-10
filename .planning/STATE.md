@@ -5,26 +5,26 @@
 See: `.planning/PROJECT.md` (updated 2026-05-10)
 
 **Core value:** Users can share any file or directory from Finder in seconds
-**Current focus:** Phase 2 — Core Share Flow
+**Current focus:** Phase 3 — Lifecycle & Email Notification
 
 ## Phase Progress
 
 | Phase | Status | Plans | Progress |
 |-------|--------|-------|----------|
 | 1 — S3 Credential Configuration | ✓ Complete | 3/3 | 100% |
-| 2 — Core Share Flow | ○ Planned | 0/3 | 0% |
+| 2 — Core Share Flow | ✓ Complete | 3/3 | 100% |
 | 3 — Lifecycle & Email Notification | ○ Pending | 0/0 | 0% |
 | 4 — Password Encryption | ○ Pending | 0/0 | 0% |
 | 5 — Menu Bar Tray | ○ Pending | 0/0 | 0% |
 | 6 — Distribution | ○ Pending | 0/0 | 0% |
 
-Progress: ██████████ 16%
+Progress: ████████████ 33%
 
 ## Current Phase
 
 **Phase 2: Core Share Flow** — Upload files with duration, copy pre-signed URL
 
-Status: Planned (3 plans, 3 waves)
+Status: Complete
 
 ### Key Decisions for Phase 2
 
@@ -38,10 +38,10 @@ Status: Planned (3 plans, 3 waves)
 
 ## Recent Activity
 
-- 2026-05-10: Phase 2 planned — 3 plans across 3 waves
-- 2026-05-10: Phase 1 executed — SPM scaffold, S3Config model, Keychain persistence, ConfigStore, S3Service (URLSession), ConfigView, ConnectionStatusView, SettingsView
+- 2026-05-10: Phase 2 executed — HMAC/SigV4, upload/download URLs, zip compression, ShareSheetView, Finder Services integration
+- 2026-05-10: Phase 1 executed — SPM scaffold, S3Config model, Keychain persistence, S3Service, config UI
 - 2026-05-10: Project initialized with requirements and 6-phase roadmap
 
 ## Next Action
 
-`/gsd-execute-phase 2` — Execute the Core Share Flow phase
+`/gsd-plan-phase 3` — Plan the Lifecycle & Email Notification phase
