@@ -24,35 +24,52 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
 }
 
+final class ShareWindowManager: NSObject, NSWindowDelegate {
+    private var controller: NSWindowController?
+
+    func presentShareWindow(for url: URL, configStore: ConfigStore, historyStore: ShareHistoryStore) {
+        controller?.window?.close()
+
+        let window = NSWindow(
+            contentRect: NSRect(x: 0, y: 0, width: 400, height: 500),
+            styleMask: [.titled, .closable, .miniaturizable, .resizable],
+            backing: .buffered,
+            defer: false
+        )
+        window.title = "Share File"
+        window.delegate = self
+
+        let shareView = ShareSheetView(
+            fileURL: url,
+            configStore: configStore,
+            autoStart: true,
+            onClose: { [weak window] in
+                DispatchQueue.main.async { window?.close() }
+            }
+        )
+        .environmentObject(historyStore)
+
+        window.contentView = NSHostingView(rootView: shareView)
+        window.center()
+        window.makeKeyAndOrderFront(nil)
+        NSApplication.shared.activate(ignoringOtherApps: true)
+        controller = NSWindowController(window: window)
+    }
+
+    func windowWillClose(_ notification: Notification) {
+        controller = nil
+    }
+}
+
 @main
 struct IShareApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
     @StateObject private var configStore = ConfigStore()
     @StateObject private var historyStore = ShareHistoryStore()
-    @State private var shareWindowController: NSWindowController?
+    @State private var shareWindowManager = ShareWindowManager()
 
     func presentShareWindow(for url: URL, autoStart: Bool) {
-        let shareView = ShareSheetView(
-            fileURL: url,
-            configStore: configStore,
-            autoStart: autoStart,
-            onClose: {
-                NSApplication.shared.keyWindow?.close()
-            }
-        )
-            .environmentObject(historyStore)
-        let window = NSWindow(
-            contentRect: NSRect(x: 0, y: 0, width: 400, height: 500),
-            styleMask: [.titled, .closable, .miniaturizable],
-            backing: .buffered,
-            defer: false
-        )
-        window.title = "Share File"
-        window.contentView = NSHostingView(rootView: shareView)
-        window.center()
-        window.makeKeyAndOrderFront(nil)
-        NSApplication.shared.activate(ignoringOtherApps: true)
-        shareWindowController = NSWindowController(window: window)
+        shareWindowManager.presentShareWindow(for: url, configStore: configStore, historyStore: historyStore)
     }
 
     var body: some Scene {
