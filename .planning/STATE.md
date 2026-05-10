@@ -13,7 +13,7 @@ See: `.planning/PROJECT.md` (updated 2026-05-10)
 |-------|--------|-------|----------|
 | 1 — S3 Credential Configuration | ✓ Complete | 3/3 | 100% |
 | 2 — Core Share Flow | ✓ Complete | 3/3 | 100% |
-| 3 — Lifecycle & Email Notification | ○ Pending | 0/0 | 0% |
+| 3 — Lifecycle & Email Notification | ○ Planned | 0/2 | 0% |
 | 4 — Password Encryption | ○ Pending | 0/0 | 0% |
 | 5 — Menu Bar Tray | ○ Pending | 0/0 | 0% |
 | 6 — Distribution | ○ Pending | 0/0 | 0% |
@@ -22,26 +22,26 @@ Progress: ████████████ 33%
 
 ## Current Phase
 
-**Phase 2: Core Share Flow** — Upload files with duration, copy pre-signed URL
+**Phase 3: Lifecycle & Email Notification** — S3 lifecycle rules clean up expired files; system mail notifies recipient
 
-Status: Complete
+Status: Planned (2 plans in 1 wave)
 
-### Key Decisions for Phase 2
+### Decisions for Phase 3
 
-- **SigV4 signing added** via CommonCrypto (system framework, no external deps) for pre-signed URL generation
-- **CommonCrypto** used for HMAC-SHA256 — `CCHmac`, `CC_SHA256` — maintains zero-external-dependency approach
-- **Zip via /usr/bin/ditto** — standard macOS tool, handles both files and directories
-- **macOS Services** for Finder integration (Info.plist NSServices) instead of Finder Sync Extension — simpler, no separate targets
-- **Upload path:** `shares/{duration}/{filename}` per SHAR-07
-- **Pre-signed URL via SigV4** with X-Amz-Expires matching user-selected duration
-- **NotificationCenter** pattern for routing file URLs from AppDelegate to SwiftUI views
+- **Lifecycle minimum granularity is days** — S3 lifecycle rules expire by day, not hour. X-Amz-Expires on pre-signed URL already enforces 1-hour access window.
+- **Duration-to-days mapping:** 1h→1d, 1d→1d, 7d→7d, 1m→30d, forever→no rule
+- **Lifecycle is idempotent** — always PUT full configuration, overwriting any existing rules
+- **Lifecycle failure is non-blocking** — best-effort cleanup, does not prevent connection
+- **System mail via mailto: URL scheme** — NSWorkspace.shared.open() with URLComponents
+- **Recipient fields are optional** — share flow works identically without them
 
 ## Recent Activity
 
+- 2026-05-10: Phase 3 planned — lifecycle rules (03-01) + recipient notification (03-02)
 - 2026-05-10: Phase 2 executed — HMAC/SigV4, upload/download URLs, zip compression, ShareSheetView, Finder Services integration
 - 2026-05-10: Phase 1 executed — SPM scaffold, S3Config model, Keychain persistence, S3Service, config UI
 - 2026-05-10: Project initialized with requirements and 6-phase roadmap
 
 ## Next Action
 
-`/gsd-plan-phase 3` — Plan the Lifecycle & Email Notification phase
+`/gsd-execute-phase 03-lifecycle-email-notif` — Execute both plans in parallel
