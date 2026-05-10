@@ -13,28 +13,28 @@
 
 ### Sharing
 
-- [ ] **SHAR-01**: User can trigger share from Finder Quick Actions menu on any file or directory
-- [ ] **SHAR-02**: Directories are always compressed to a single zip file before upload
-- [ ] **SHAR-03**: Single files optionally compress with zip (user can skip)
-- [ ] **SHAR-04**: User selects duration from 1h, 1d, 7d, 1m, or forever
-- [ ] **SHAR-05**: User can optionally encrypt the file with a password before upload
-- [ ] **SHAR-06**: User can optionally enter recipient name, recipient email, and a personal message
-- [ ] **SHAR-07**: File uploads to S3 under prefix `shares/{duration}/{filename}`
-- [ ] **SHAR-08**: Pre-signed URL is generated with matching duration and copied to clipboard
-- [ ] **SHAR-09**: S3 lifecycle rules auto-delete files after their duration expires
-- [ ] **SHAR-10**: System mail app opens with pre-composed draft (recipient, subject, body with URL + expiry + sender's personal message)
-- [ ] **SHAR-11**: Encryption password is NOT included in the email body (out-of-band communication)
+- [x] **SHAR-01**: User can trigger share from Finder Quick Actions menu on any file or directory
+- [x] **SHAR-02**: Directories are always compressed to a single zip file before upload
+- [x] **SHAR-03**: Single files optionally compress with zip (user can skip)
+- [x] **SHAR-04**: User selects duration from 1h, 1d, 7d, 1m, or forever
+- [x] **SHAR-05**: User can optionally encrypt the file with a password before upload
+- [x] **SHAR-06**: User can optionally enter recipient name, recipient email, and a personal message
+- [x] **SHAR-07**: File uploads to S3 under prefix `shares/{duration}/{filename}`
+- [x] **SHAR-08**: Pre-signed URL is generated with matching duration and copied to clipboard
+- [x] **SHAR-09**: S3 lifecycle rules auto-delete files after their duration expires
+- [x] **SHAR-10**: System mail app opens with pre-composed draft (recipient, subject, body with URL + expiry + sender's personal message)
+- [x] **SHAR-11**: Encryption password is NOT included in the email body (out-of-band communication)
 
 ### Tray
 
-- [ ] **TRAY-01**: Menu bar icon displays list of all shared files
-- [ ] **TRAY-02**: Each tray entry shows filename, duration, remaining time, a link-to-copy button, and a delete button
-- [ ] **TRAY-03**: Deleting a file from the tray removes it from S3 immediately
-- [ ] **TRAY-04**: Shared file list persists across app restarts
+- [x] **TRAY-01**: Menu bar icon displays list of all shared files
+- [x] **TRAY-02**: Each tray entry shows filename, duration, remaining time, a link-to-copy button, and a delete button
+- [x] **TRAY-03**: Deleting a file from the tray removes it from S3 immediately
+- [x] **TRAY-04**: Shared file list persists across app restarts
 
 ### Distribution
 
-- [ ] **DIST-01**: App is distributed as a .dmg file
+- [x] **DIST-01**: App is distributed as a .dmg file
 
 ## v2 Requirements
 
