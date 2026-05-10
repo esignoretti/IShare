@@ -82,6 +82,7 @@ Plans:
 ### Phase 5: Menu Bar Tray
 **Goal:** Persistent tray list with copy-link and delete
 **Requirements:** TRAY-01, TRAY-02, TRAY-03, TRAY-04
+**Plans:** 2 plans in 2 waves
 **Success Criteria:**
 1. Menu bar icon shows active shares count as badge
 2. Clicking icon shows dropdown list of all shared files
@@ -90,6 +91,10 @@ Plans:
 5. Each entry has a "Delete" button that immediately removes the file from S3
 6. List persists across app restarts (stored in UserDefaults or local file)
 7. Entries for expired files are removed on app launch
+
+Plans:
+- [ ] 05-01-PLAN.md — ShareRecord model, ShareHistoryStore persistence, S3Service.deleteFile, ShareService history wiring
+- [ ] 05-02-PLAN.md — MenuBarTrayView with dropdown list, copy-link, delete buttons, MenuBarExtra integration
 
 ### Phase 6: Distribution
 **Goal:** Package as distributable .dmg
