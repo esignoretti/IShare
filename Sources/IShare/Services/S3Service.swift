@@ -10,7 +10,6 @@ enum S3Error: Error, LocalizedError {
     case signingFailed(String)
     case lifecycleConfigurationFailed(String)
     case deleteFailed(String)
-    case fileAlreadyExists(String)
     case unexpected(Error)
 
     var errorDescription: String? {
@@ -24,7 +23,6 @@ enum S3Error: Error, LocalizedError {
         case .signingFailed(let msg): return "Signing failed: \(msg)"
         case .lifecycleConfigurationFailed(let msg): return "Lifecycle configuration failed: \(msg)"
         case .deleteFailed(let msg): return "Delete failed: \(msg)"
-        case .fileAlreadyExists(let key): return "File already uploaded: \(key)"
         case .unexpected(let err): return "Unexpected error: \(err.localizedDescription)"
         }
     }
@@ -43,11 +41,6 @@ struct S3Service {
             components.path = ""
         }
         return components.url
-    }
-
-    private func signRequest(_ request: inout URLRequest, body: Data? = nil) {
-        request.setValue(config.accessKey, forHTTPHeaderField: "x-amz-access-key")
-        request.setValue(ISO8601DateFormatter().string(from: Date()), forHTTPHeaderField: "Date")
     }
 
     private func makeRequest(path: String, method: String, body: Data? = nil) -> URLRequest? {
@@ -80,7 +73,8 @@ struct S3Service {
 
         var request = URLRequest(url: base)
         request.httpMethod = "GET"
-        signRequest(&request)
+        request.setValue(config.accessKey, forHTTPHeaderField: "x-amz-access-key")
+        request.setValue(ISO8601DateFormatter().string(from: Date()), forHTTPHeaderField: "Date")
 
         do {
             let (data, response) = try await URLSession.shared.data(for: request)
@@ -125,7 +119,8 @@ struct S3Service {
         let url = base.appendingPathComponent(config.bucketName)
         var request = URLRequest(url: url)
         request.httpMethod = "HEAD"
-        signRequest(&request)
+        request.setValue(config.accessKey, forHTTPHeaderField: "x-amz-access-key")
+        request.setValue(ISO8601DateFormatter().string(from: Date()), forHTTPHeaderField: "Date")
 
         do {
             let (_, response) = try await URLSession.shared.data(for: request)
@@ -155,6 +150,8 @@ struct S3Service {
         let url = base.appendingPathComponent(config.bucketName)
         var request = URLRequest(url: url)
         request.httpMethod = "PUT"
+        request.setValue(config.accessKey, forHTTPHeaderField: "x-amz-access-key")
+        request.setValue(ISO8601DateFormatter().string(from: Date()), forHTTPHeaderField: "Date")
 
         if config.region != "us-east-1" {
             let locationConstraintXML = """
@@ -165,8 +162,6 @@ struct S3Service {
             request.httpBody = locationConstraintXML.data(using: .utf8)
             request.setValue("application/xml", forHTTPHeaderField: "Content-Type")
         }
-
-        signRequest(&request)
 
         do {
             let (_, response) = try await URLSession.shared.data(for: request)
@@ -204,27 +199,6 @@ struct S3Service {
 
     // MARK: - File Upload / Delete
 
-    private func headObject(objectKey: String) async -> Result<Bool, S3Error> {
-        guard let base = baseURL else {
-            return .failure(.connectionFailed("Invalid endpoint URL"))
-        }
-
-        let url = base.appendingPathComponent(config.bucketName).appendingPathComponent(objectKey)
-        var request = URLRequest(url: url)
-        request.httpMethod = "HEAD"
-        signRequest(&request)
-
-        do {
-            let (_, response) = try await URLSession.shared.data(for: request)
-            guard let httpResponse = response as? HTTPURLResponse else {
-                return .failure(.connectionFailed("Invalid response"))
-            }
-            return .success(httpResponse.statusCode == 200)
-        } catch {
-            return .success(false)
-        }
-    }
-
     func uploadFile(
         fileURL: URL,
         duration: String,
@@ -249,9 +223,10 @@ struct S3Service {
         var request = URLRequest(url: url)
         request.httpMethod = "PUT"
         request.httpBody = fileData
+        request.setValue(config.accessKey, forHTTPHeaderField: "x-amz-access-key")
+        request.setValue(ISO8601DateFormatter().string(from: Date()), forHTTPHeaderField: "Date")
         request.setValue("application/octet-stream", forHTTPHeaderField: "Content-Type")
         request.setValue("\(fileData.count)", forHTTPHeaderField: "Content-Length")
-        signRequest(&request)
 
         do {
             let (_, response) = try await URLSession.shared.data(for: request)
@@ -376,7 +351,8 @@ struct S3Service {
         let url = base.appendingPathComponent(config.bucketName).appendingPathComponent(objectKey)
         var request = URLRequest(url: url)
         request.httpMethod = "DELETE"
-        signRequest(&request)
+        request.setValue(config.accessKey, forHTTPHeaderField: "x-amz-access-key")
+        request.setValue(ISO8601DateFormatter().string(from: Date()), forHTTPHeaderField: "Date")
 
         do {
             let (_, response) = try await URLSession.shared.data(for: request)
@@ -458,9 +434,10 @@ struct S3Service {
         var request = URLRequest(url: lifecycleURL)
         request.httpMethod = "PUT"
         request.httpBody = xmlData
+        request.setValue(config.accessKey, forHTTPHeaderField: "x-amz-access-key")
+        request.setValue(ISO8601DateFormatter().string(from: Date()), forHTTPHeaderField: "Date")
         request.setValue("application/xml", forHTTPHeaderField: "Content-Type")
         request.setValue("\(xmlData.count)", forHTTPHeaderField: "Content-Length")
-        signRequest(&request)
 
         do {
             let (_, response) = try await URLSession.shared.data(for: request)
