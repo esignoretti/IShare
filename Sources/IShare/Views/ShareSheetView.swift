@@ -79,6 +79,7 @@ struct ShareSheetView: View {
                     }
                 }
                 .pickerStyle(.segmented)
+                .labelsHidden()
             }
             .padding(.horizontal, 20)
 
