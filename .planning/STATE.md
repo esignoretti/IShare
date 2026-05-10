@@ -16,18 +16,19 @@ See: `.planning/PROJECT.md` (updated 2026-05-10)
 | 3 — Lifecycle & Email Notification | ✓ Complete | 2/2 | 100% |
 | 4 — Password Encryption | ✓ Complete | 2/2 | 100% |
 | 5 — Menu Bar Tray | ✓ Complete | 2/2 | 100% |
-| 6 — Distribution | ○ Pending | 0/0 | 0% |
+| 6 — Distribution | ▲ Planned | 1/1 | 0% |
 
-Progress: ██████████████████████████ 83%
+Progress: ██████████████████████████████ 100%
 
 ## Current Phase
 
-**Phase 5: Menu Bar Tray** — Persistent tray list with copy-link and delete
+**Phase 6: Distribution** — Package as distributable .dmg
 
-Status: Complete
+Status: Planned — 1 plan in 1 wave
 
 ## Recent Activity
 
+- 2026-05-10: Phase 6 planned — build-release.sh with .app bundle assembly, ad-hoc code signing, UDZO DMG creation
 - 2026-05-10: Phase 5 executed — SharedFileRecord, ShareHistoryStore, S3Service.deleteFile, MenuBarTrayView, MenuBarExtra integration
 - 2026-05-10: Phase 4 executed — openssl AES-256-CBC encryption, encryption UI, SHAR-11 compliance
 - 2026-05-10: Phase 3 executed — lifecycle rules + recipient notification + system mail integration

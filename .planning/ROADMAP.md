@@ -93,15 +93,19 @@ Plans:
 7. Entries for expired files are removed on app launch
 
 Plans:
-- [ ] 05-01-PLAN.md — ShareRecord model, ShareHistoryStore persistence, S3Service.deleteFile, ShareService history wiring
-- [ ] 05-02-PLAN.md — MenuBarTrayView with dropdown list, copy-link, delete buttons, MenuBarExtra integration
+- [x] 05-01-PLAN.md — ShareRecord model, ShareHistoryStore persistence, S3Service.deleteFile, ShareService history wiring
+- [x] 05-02-PLAN.md — MenuBarTrayView with dropdown list, copy-link, delete buttons, MenuBarExtra integration
 
 ### Phase 6: Distribution
 **Goal:** Package as distributable .dmg
 **Requirements:** DIST-01
+**Plans:** 1 plan in 1 wave
 **Success Criteria:**
 1. App builds as a standalone .app bundle
-2. `productbuild` or `create-dmg` produces a .dmg file
+2. `hdiutil` produces a compressed .dmg file
 3. Dragging .app into Applications folder works correctly
 4. All entitlements and code signing are configured
 5. DMG includes a nice background and Applications shortcut
+
+Plans:
+- [ ] 06-01-PLAN.md — Automated build-release.sh: .app bundle assembly, ad-hoc code signing, UDZO DMG with background image and Applications symlink
