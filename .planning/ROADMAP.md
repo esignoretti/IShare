@@ -18,12 +18,18 @@
 ### Phase 1: S3 Credential Configuration
 **Goal:** App boots, shows config UI, connects to DS3
 **Requirements:** CONF-01, CONF-02, CONF-03
+**Plans:** 3 plans in 2 waves
 **Success Criteria:**
 1. On first launch, user sees credential configuration UI (endpoint URL, access key, secret key, bucket name)
 2. User can save credentials and they persist across app restarts
 3. If bucket doesn't exist, app creates it automatically
 4. App shows connection status (Connected / Failed)
 5. User can edit/reconfigure credentials from settings
+
+Plans:
+- [ ] 01-01-PLAN.md — Project scaffold, S3Config model, Keychain + UserDefaults persistence
+- [ ] 01-02-PLAN.md — S3Service with custom endpoint, connection test, bucket auto-creation
+- [ ] 01-03-PLAN.md — ConfigView UI, ConnectionStatusView, SettingsView, app lifecycle wiring
 
 ### Phase 2: Core Share Flow
 **Goal:** Upload files with duration, copy pre-signed URL
