@@ -2,9 +2,11 @@ import Foundation
 
 struct ShareService {
     private let s3Service: S3Service
+    private let shareHistoryStore: ShareHistoryStore
 
-    init(s3Service: S3Service) {
+    init(s3Service: S3Service, shareHistoryStore: ShareHistoryStore = ShareHistoryStore()) {
         self.s3Service = s3Service
+        self.shareHistoryStore = shareHistoryStore
     }
 
     func compress(sourceURL: URL, outputURL: URL) async -> Result<URL, ShareError> {
@@ -123,6 +125,20 @@ struct ShareService {
             mutableItem.state = .complete
         case .failure(let error):
             mutableItem.state = .failed(error.localizedDescription)
+        }
+
+        if mutableItem.state == .complete, let objectKey = mutableItem.objectKey {
+            let cleanName = mutableItem.fileURL.lastPathComponent
+                .replacingOccurrences(of: ".enc", with: "")
+                .replacingOccurrences(of: ".zip", with: "")
+            let record = SharedFileRecord(
+                fileName: cleanName,
+                duration: mutableItem.duration,
+                objectKey: objectKey,
+                isEncrypted: mutableItem.isEncrypted,
+                presignedURL: mutableItem.presignedURL
+            )
+            await shareHistoryStore.add(record)
         }
 
         onUpdate(mutableItem)

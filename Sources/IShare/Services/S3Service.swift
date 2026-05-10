@@ -9,6 +9,7 @@ enum S3Error: Error, LocalizedError {
     case presignFailed(String)
     case signingFailed(String)
     case lifecycleConfigurationFailed(String)
+    case deleteFailed(String)
     case unexpected(Error)
 
     var errorDescription: String? {
@@ -21,6 +22,7 @@ enum S3Error: Error, LocalizedError {
         case .presignFailed(let msg): return "Pre-signed URL generation failed: \(msg)"
         case .signingFailed(let msg): return "Signing failed: \(msg)"
         case .lifecycleConfigurationFailed(let msg): return "Lifecycle configuration failed: \(msg)"
+        case .deleteFailed(let msg): return "Delete failed: \(msg)"
         case .unexpected(let err): return "Unexpected error: \(err.localizedDescription)"
         }
     }
@@ -195,7 +197,7 @@ struct S3Service {
         }
     }
 
-    // MARK: - File Upload
+    // MARK: - File Upload / Delete
 
     func uploadFile(
         fileURL: URL,
@@ -333,6 +335,39 @@ struct S3Service {
         }
 
         return .success(presignedURL.absoluteString)
+    }
+
+    // MARK: - File Delete
+
+    func deleteFile(objectKey: String) async -> Result<Void, S3Error> {
+        guard config.isValid else {
+            return .failure(.invalidConfig("All credential fields must be non-empty"))
+        }
+
+        guard let base = baseURL else {
+            return .failure(.connectionFailed("Invalid endpoint URL"))
+        }
+
+        let url = base.appendingPathComponent(config.bucketName).appendingPathComponent(objectKey)
+        var request = URLRequest(url: url)
+        request.httpMethod = "DELETE"
+        request.setValue(config.accessKey, forHTTPHeaderField: "x-amz-access-key")
+        request.setValue(ISO8601DateFormatter().string(from: Date()), forHTTPHeaderField: "Date")
+
+        do {
+            let (_, response) = try await URLSession.shared.data(for: request)
+            guard let httpResponse = response as? HTTPURLResponse else {
+                return .failure(.deleteFailed("Invalid response"))
+            }
+
+            guard (200...299).contains(httpResponse.statusCode) else {
+                return .failure(.deleteFailed("HTTP \(httpResponse.statusCode)"))
+            }
+
+            return .success(())
+        } catch {
+            return .failure(.deleteFailed(error.localizedDescription))
+        }
     }
 
     // MARK: - Lifecycle Rules
