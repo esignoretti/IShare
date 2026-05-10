@@ -52,12 +52,17 @@ Plans:
 ### Phase 3: Lifecycle & Email Notification
 **Goal:** S3 lifecycle rules clean up expired files; system mail notifies recipient
 **Requirements:** SHAR-06, SHAR-09
+**Plans:** 2 plans in 1 wave
 **Success Criteria:**
 1. S3 lifecycle rules are configured on the bucket for each duration prefix (1h, 1d, 7d, 1m)
 2. Expired files are automatically deleted by S3
 3. Share flow includes optional recipient fields (name, email, personal message)
 4. When recipient info is provided, system mail app opens with pre-composed draft
 5. Draft includes pre-signed URL, expiry date/time, file name, and sender's personal message
+
+Plans:
+- [ ] 03-01-PLAN.md — S3 lifecycle rule configuration for all duration prefixes
+- [ ] 03-02-PLAN.md — Recipient info model, recipient fields UI, system mail integration
 
 ### Phase 4: Password Encryption
 **Goal:** Optional password-based encryption before upload
