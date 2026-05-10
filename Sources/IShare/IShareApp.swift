@@ -27,7 +27,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 final class ShareWindowManager: NSObject, NSWindowDelegate {
     private var controller: NSWindowController?
 
-    func presentShareWindow(for url: URL, configStore: ConfigStore, historyStore: ShareHistoryStore) {
+    func presentShareWindow(for url: URL, configStore: ConfigStore, historyStore: ShareHistoryStore, autoStart: Bool = true) {
         controller?.window?.close()
 
         let window = NSWindow(
@@ -44,7 +44,7 @@ final class ShareWindowManager: NSObject, NSWindowDelegate {
         let shareView = ShareSheetView(
             fileURL: url,
             configStore: configStore,
-            autoStart: true,
+            autoStart: autoStart,
             onClose: { [weak window] in
                 window?.close()
             }
@@ -71,7 +71,7 @@ struct IShareApp: App {
     @State private var shareWindowManager = ShareWindowManager()
 
     func presentShareWindow(for url: URL, autoStart: Bool) {
-        shareWindowManager.presentShareWindow(for: url, configStore: configStore, historyStore: historyStore)
+        shareWindowManager.presentShareWindow(for: url, configStore: configStore, historyStore: historyStore, autoStart: autoStart)
     }
 
     var body: some Scene {
