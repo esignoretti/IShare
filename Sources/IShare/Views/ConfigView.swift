@@ -163,6 +163,12 @@ struct ConfigView: View {
             return
         }
 
+        // Configure lifecycle rules (best-effort — non-blocking)
+        let lifecycleResult = await service.configureLifecycleRules()
+        if case .failure(let error) = lifecycleResult {
+            print("Warning: Lifecycle configuration failed: \(error.localizedDescription)")
+        }
+
         configStore.config = config
         let saved = configStore.save()
         if !saved {

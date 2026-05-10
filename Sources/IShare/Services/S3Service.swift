@@ -8,6 +8,7 @@ enum S3Error: Error, LocalizedError {
     case uploadFailed(String)
     case presignFailed(String)
     case signingFailed(String)
+    case lifecycleConfigurationFailed(String)
     case unexpected(Error)
 
     var errorDescription: String? {
@@ -19,6 +20,7 @@ enum S3Error: Error, LocalizedError {
         case .uploadFailed(let msg): return "Upload failed: \(msg)"
         case .presignFailed(let msg): return "Pre-signed URL generation failed: \(msg)"
         case .signingFailed(let msg): return "Signing failed: \(msg)"
+        case .lifecycleConfigurationFailed(let msg): return "Lifecycle configuration failed: \(msg)"
         case .unexpected(let err): return "Unexpected error: \(err.localizedDescription)"
         }
     }
@@ -331,6 +333,91 @@ struct S3Service {
         }
 
         return .success(presignedURL.absoluteString)
+    }
+
+    // MARK: - Lifecycle Rules
+
+    func configureLifecycleRules() async -> Result<Void, S3Error> {
+        guard config.isValid else {
+            return .failure(.invalidConfig("All credential fields must be non-empty"))
+        }
+
+        let xml = buildLifecycleXML()
+        return await putBucketLifecycleConfiguration(xml: xml)
+    }
+
+    private func buildLifecycleXML() -> String {
+        """
+        <LifecycleConfiguration xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
+            <Rule>
+                <ID>expire-1h</ID>
+                <Filter><Prefix>shares/1h/</Prefix></Filter>
+                <Status>Enabled</Status>
+                <Expiration><Days>1</Days></Expiration>
+            </Rule>
+            <Rule>
+                <ID>expire-1d</ID>
+                <Filter><Prefix>shares/1d/</Prefix></Filter>
+                <Status>Enabled</Status>
+                <Expiration><Days>1</Days></Expiration>
+            </Rule>
+            <Rule>
+                <ID>expire-7d</ID>
+                <Filter><Prefix>shares/7d/</Prefix></Filter>
+                <Status>Enabled</Status>
+                <Expiration><Days>7</Days></Expiration>
+            </Rule>
+            <Rule>
+                <ID>expire-1m</ID>
+                <Filter><Prefix>shares/1m/</Prefix></Filter>
+                <Status>Enabled</Status>
+                <Expiration><Days>30</Days></Expiration>
+            </Rule>
+        </LifecycleConfiguration>
+        """
+    }
+
+    private func putBucketLifecycleConfiguration(xml: String) async -> Result<Void, S3Error> {
+        guard let base = baseURL else {
+            return .failure(.connectionFailed("Invalid endpoint URL"))
+        }
+
+        let url = base.appendingPathComponent(config.bucketName)
+        guard var urlComponents = URLComponents(url: url, resolvingAgainstBaseURL: false) else {
+            return .failure(.lifecycleConfigurationFailed("Invalid URL"))
+        }
+        urlComponents.queryItems = [URLQueryItem(name: "lifecycle", value: nil)]
+
+        guard let lifecycleURL = urlComponents.url else {
+            return .failure(.lifecycleConfigurationFailed("Invalid URL"))
+        }
+
+        guard let xmlData = xml.data(using: .utf8) else {
+            return .failure(.lifecycleConfigurationFailed("Failed to encode XML"))
+        }
+
+        var request = URLRequest(url: lifecycleURL)
+        request.httpMethod = "PUT"
+        request.httpBody = xmlData
+        request.setValue(config.accessKey, forHTTPHeaderField: "x-amz-access-key")
+        request.setValue(ISO8601DateFormatter().string(from: Date()), forHTTPHeaderField: "Date")
+        request.setValue("application/xml", forHTTPHeaderField: "Content-Type")
+        request.setValue("\(xmlData.count)", forHTTPHeaderField: "Content-Length")
+
+        do {
+            let (_, response) = try await URLSession.shared.data(for: request)
+            guard let httpResponse = response as? HTTPURLResponse else {
+                return .failure(.lifecycleConfigurationFailed("Invalid response"))
+            }
+
+            guard (200...299).contains(httpResponse.statusCode) else {
+                return .failure(.lifecycleConfigurationFailed("HTTP \(httpResponse.statusCode)"))
+            }
+
+            return .success(())
+        } catch {
+            return .failure(.lifecycleConfigurationFailed(error.localizedDescription))
+        }
     }
 
     // MARK: - XML Parsing

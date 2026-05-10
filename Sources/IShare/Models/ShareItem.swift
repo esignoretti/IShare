@@ -1,5 +1,11 @@
 import Foundation
 
+struct RecipientInfo {
+    var recipientName: String = ""
+    var recipientEmail: String = ""
+    var personalMessage: String = ""
+}
+
 enum ShareDuration: String, CaseIterable, Identifiable {
     case oneHour = "1h"
     case oneDay = "1d"
@@ -40,6 +46,11 @@ struct ShareItem: Identifiable {
     var presignedURL: String?
     var progress: Double = 0.0
     var state: ShareState = .pending
+    var recipientInfo: RecipientInfo = RecipientInfo()
+
+    var hasRecipient: Bool {
+        !recipientInfo.recipientEmail.isEmpty
+    }
 
     var displayName: String {
         fileURL.lastPathComponent

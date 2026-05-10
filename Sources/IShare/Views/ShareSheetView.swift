@@ -1,4 +1,5 @@
 import SwiftUI
+import AppKit
 
 struct ShareSheetView: View {
     let fileURL: URL
@@ -8,6 +9,7 @@ struct ShareSheetView: View {
     @State private var shareItem: ShareItem
     @State private var isSharing = false
     @State private var showSuccess = false
+    @State private var showRecipientFields = false
 
     @Environment(\.dismiss) private var dismiss
 
@@ -95,6 +97,20 @@ struct ShareSheetView: View {
                 }
                 .padding(.horizontal, 20)
             }
+
+            DisclosureGroup("Notify Recipient (Optional)", isExpanded: $showRecipientFields) {
+                VStack(alignment: .leading, spacing: 8) {
+                    TextField("Recipient Name", text: $shareItem.recipientInfo.recipientName)
+                        .textFieldStyle(.roundedBorder)
+                    TextField("Recipient Email", text: $shareItem.recipientInfo.recipientEmail)
+                        .textFieldStyle(.roundedBorder)
+                    TextField("Personal Message (optional)", text: $shareItem.recipientInfo.personalMessage, axis: .vertical)
+                        .textFieldStyle(.roundedBorder)
+                        .lineLimit(2...4)
+                }
+                .padding(.top, 4)
+            }
+            .padding(.horizontal, 20)
 
             Divider()
                 .padding(.vertical, 8)
@@ -191,6 +207,16 @@ struct ShareSheetView: View {
                     }
                     .buttonStyle(.borderless)
                     .help("Copy link to clipboard")
+
+                    if shareItem.hasRecipient {
+                        Button {
+                            composeEmail(for: shareItem)
+                        } label: {
+                            Image(systemName: "envelope")
+                        }
+                        .buttonStyle(.borderless)
+                        .help("Open email draft")
+                    }
                 }
                 .padding(.horizontal, 20)
             }
@@ -239,5 +265,40 @@ struct ShareSheetView: View {
     private func copyToClipboard(_ string: String) {
         NSPasteboard.general.clearContents()
         NSPasteboard.general.setString(string, forType: .string)
+    }
+
+    private func composeEmail(for item: ShareItem) {
+        guard item.hasRecipient else { return }
+
+        let subject = "\(item.displayName) shared with you via IShare"
+        let expiryText: String
+        if item.duration == .forever {
+            expiryText = "This link never expires."
+        } else {
+            let formatter = DateFormatter()
+            formatter.dateStyle = .medium
+            formatter.timeStyle = .short
+            let expiryDate = Date().addingTimeInterval(TimeInterval(item.duration.seconds))
+            expiryText = "This link expires on \(formatter.string(from: expiryDate))."
+        }
+
+        var body = "Hello"
+        if !item.recipientInfo.recipientName.isEmpty {
+            body += " \(item.recipientInfo.recipientName)"
+        }
+        body += ",\n\n\(item.displayName) has been shared with you.\n\n"
+        body += "Download link: \(item.presignedURL ?? "N/A")\n\n"
+        body += expiryText + "\n"
+        if !item.recipientInfo.personalMessage.isEmpty {
+            body += "\nMessage from sender:\n\(item.recipientInfo.personalMessage)\n"
+        }
+
+        guard let encodedSubject = subject.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed),
+              let encodedBody = body.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) else { return }
+
+        let mailTo = "mailto:\(item.recipientInfo.recipientEmail)?subject=\(encodedSubject)&body=\(encodedBody)"
+        guard let url = URL(string: mailTo) else { return }
+
+        NSWorkspace.shared.open(url)
     }
 }
