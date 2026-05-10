@@ -198,7 +198,7 @@ struct S3Service {
     func uploadFile(
         fileURL: URL,
         duration: String,
-        progressHandler: (@Sendable (Double) -> Void)? = nil
+        progressHandler: ((Double) -> Void)? = nil
     ) async -> Result<String, S3Error> {
         guard config.isValid else {
             return .failure(.invalidConfig("All credential fields must be non-empty"))

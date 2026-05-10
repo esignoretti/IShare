@@ -3,12 +3,25 @@ import SwiftUI
 @main
 struct IShareApp: App {
     @StateObject private var configStore = ConfigStore()
+    @State private var showShareSheet = false
+    @State private var pendingFileURL: URL?
 
     var body: some Scene {
         WindowGroup {
             if configStore.isConfigured {
-                MainContentView()
-                    .environmentObject(configStore)
+                MainContentView(
+                    configStore: configStore,
+                    onShareFile: { url in
+                        pendingFileURL = url
+                        showShareSheet = true
+                    }
+                )
+                .environmentObject(configStore)
+                .sheet(isPresented: $showShareSheet) {
+                    if let url = pendingFileURL {
+                        ShareSheetView(fileURL: url, configStore: configStore)
+                    }
+                }
             } else {
                 ConfigView()
             }
@@ -21,6 +34,13 @@ struct IShareApp: App {
                     openSettings()
                 }
                 .keyboardShortcut(",", modifiers: .command)
+            }
+
+            CommandGroup(before: .newItem) {
+                Button("Share File...") {
+                    openFilePicker()
+                }
+                .keyboardShortcut("n", modifiers: [.command, .shift])
             }
         }
     }
@@ -39,9 +59,30 @@ struct IShareApp: App {
         window.makeKeyAndOrderFront(nil)
         NSApplication.shared.activate(ignoringOtherApps: true)
     }
+
+    private func openFilePicker() {
+        let panel = NSOpenPanel()
+        panel.canChooseFiles = true
+        panel.canChooseDirectories = true
+        panel.allowsMultipleSelection = false
+        panel.title = "Select a file to share"
+
+        panel.begin { response in
+            if response == .OK, let url = panel.url {
+                pendingFileURL = url
+                showShareSheet = true
+            }
+        }
+    }
 }
 
 struct MainContentView: View {
+    @ObservedObject var configStore: ConfigStore
+    let onShareFile: (URL) -> Void
+
+    @State private var showShareSheet = false
+    @State private var shareURL: URL?
+
     var body: some View {
         VStack(spacing: 16) {
             Image(systemName: "checkmark.circle.fill")
@@ -52,12 +93,35 @@ struct MainContentView: View {
                 .font(.title)
                 .fontWeight(.semibold)
 
-            Text("You're all set. Use Quick Actions or right-click a file in Finder to share via IShare.")
+            Text("Use the Share menu, right-click a file in Finder, or press \u{2318}\u{21E7}N to share via IShare.")
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, 40)
+
+            Button {
+                let panel = NSOpenPanel()
+                panel.canChooseFiles = true
+                panel.canChooseDirectories = true
+                panel.allowsMultipleSelection = false
+                panel.title = "Select a file to share"
+                panel.begin { response in
+                    if response == .OK, let url = panel.url {
+                        shareURL = url
+                        showShareSheet = true
+                    }
+                }
+            } label: {
+                Label("Share a File...", systemImage: "square.and.arrow.up")
+            }
+            .buttonStyle(.borderedProminent)
+            .padding(.top, 8)
         }
-        .frame(width: 400, height: 300)
+        .frame(width: 400, height: 320)
+        .sheet(isPresented: $showShareSheet) {
+            if let url = shareURL {
+                ShareSheetView(fileURL: url, configStore: configStore)
+            }
+        }
     }
 }
