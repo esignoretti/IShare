@@ -53,10 +53,12 @@ struct ShareSheetView: View {
             } else if isSharing {
                 progressView
             } else {
-                shareOptionsView
+                ScrollView {
+                    shareOptionsView
+                }
             }
         }
-        .frame(width: 400, height: 420)
+        .frame(width: 400, height: 480)
         .onAppear {
             if autoStart && !isSharing && !showSuccess {
                 Task { await startShare() }

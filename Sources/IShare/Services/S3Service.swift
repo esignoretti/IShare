@@ -10,6 +10,7 @@ enum S3Error: Error, LocalizedError {
     case signingFailed(String)
     case lifecycleConfigurationFailed(String)
     case deleteFailed(String)
+    case fileAlreadyExists(String)
     case unexpected(Error)
 
     var errorDescription: String? {
@@ -23,6 +24,7 @@ enum S3Error: Error, LocalizedError {
         case .signingFailed(let msg): return "Signing failed: \(msg)"
         case .lifecycleConfigurationFailed(let msg): return "Lifecycle configuration failed: \(msg)"
         case .deleteFailed(let msg): return "Delete failed: \(msg)"
+        case .fileAlreadyExists(let key): return "File already uploaded: \(key)"
         case .unexpected(let err): return "Unexpected error: \(err.localizedDescription)"
         }
     }
@@ -251,6 +253,27 @@ struct S3Service {
 
     // MARK: - File Upload / Delete
 
+    private func headObject(objectKey: String) async -> Result<Bool, S3Error> {
+        guard let base = baseURL else {
+            return .failure(.connectionFailed("Invalid endpoint URL"))
+        }
+
+        let url = base.appendingPathComponent(config.bucketName).appendingPathComponent(objectKey)
+        var request = URLRequest(url: url)
+        request.httpMethod = "HEAD"
+        signRequest(&request)
+
+        do {
+            let (_, response) = try await URLSession.shared.data(for: request)
+            guard let httpResponse = response as? HTTPURLResponse else {
+                return .failure(.connectionFailed("Invalid response"))
+            }
+            return .success(httpResponse.statusCode == 200)
+        } catch {
+            return .success(false)
+        }
+    }
+
     func uploadFile(
         fileURL: URL,
         duration: String,
@@ -286,6 +309,12 @@ struct S3Service {
             }
 
             guard (200...299).contains(httpResponse.statusCode) else {
+                if httpResponse.statusCode == 403 {
+                    let exists = await headObject(objectKey: objectKey)
+                    if case .success(true) = exists {
+                        return .failure(.fileAlreadyExists(objectKey))
+                    }
+                }
                 return .failure(.uploadFailed("HTTP \(httpResponse.statusCode)"))
             }
 
