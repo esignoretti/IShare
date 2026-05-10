@@ -46,11 +46,8 @@ struct S3Service {
     }
 
     private func signRequest(_ request: inout URLRequest, body: Data? = nil) {
-        let now = Date()
-        let amzDate = sigV4AmzDate(from: now)
-        request.setValue(amzDate, forHTTPHeaderField: "X-Amz-Date")
         request.setValue(config.accessKey, forHTTPHeaderField: "x-amz-access-key")
-        request.setValue(config.bucketName, forHTTPHeaderField: "x-amz-bucket")
+        request.setValue(ISO8601DateFormatter().string(from: Date()), forHTTPHeaderField: "Date")
     }
 
     private func makeRequest(path: String, method: String, body: Data? = nil) -> URLRequest? {
