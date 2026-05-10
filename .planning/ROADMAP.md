@@ -67,12 +67,17 @@ Plans:
 ### Phase 4: Password Encryption
 **Goal:** Optional password-based encryption before upload
 **Requirements:** SHAR-05, SHAR-10, SHAR-11
+**Plans:** 2 plans in 2 waves
 **Success Criteria:**
 1. Share flow includes optional "Encrypt with password" toggle
 2. When enabled, user enters a password before upload
 3. File is encrypted client-side before being uploaded to DS3
 4. Password is NOT included in the email draft or stored locally
 5. Tray list shows a lock indicator for encrypted files
+
+Plans:
+- [ ] 04-01-PLAN.md — EncryptionService, ShareItem encryption fields, ShareService encryption wiring
+- [ ] 04-02-PLAN.md — Encryption toggle UI, password fields, SHAR-11 email compliance
 
 ### Phase 5: Menu Bar Tray
 **Goal:** Persistent tray list with copy-link and delete

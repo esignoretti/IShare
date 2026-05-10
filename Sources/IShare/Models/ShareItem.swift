@@ -47,6 +47,9 @@ struct ShareItem: Identifiable {
     var progress: Double = 0.0
     var state: ShareState = .pending
     var recipientInfo: RecipientInfo = RecipientInfo()
+    var encryptionPassword: String = ""
+
+    var isEncrypted: Bool { !encryptionPassword.isEmpty }
 
     var hasRecipient: Bool {
         !recipientInfo.recipientEmail.isEmpty
@@ -66,6 +69,7 @@ struct ShareItem: Identifiable {
 enum ShareState: Equatable {
     case pending
     case compressing
+    case encrypting
     case uploading
     case generatingURL
     case complete

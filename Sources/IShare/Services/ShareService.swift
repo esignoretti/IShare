@@ -61,6 +61,25 @@ struct ShareService {
             }
         }
 
+        if mutableItem.isEncrypted {
+            mutableItem.state = .encrypting
+            onUpdate(mutableItem)
+
+            let encryptResult = await EncryptionService.encryptFile(
+                sourceURL: mutableItem.fileURL,
+                password: mutableItem.encryptionPassword
+            )
+
+            switch encryptResult {
+            case .success(let encryptedURL):
+                mutableItem.fileURL = encryptedURL
+            case .failure(let error):
+                mutableItem.state = .failed(error.localizedDescription)
+                onUpdate(mutableItem)
+                return mutableItem
+            }
+        }
+
         mutableItem.state = .uploading
         onUpdate(mutableItem)
 
@@ -118,6 +137,13 @@ struct ShareService {
                 try? FileManager.default.removeItem(at: tempFileURL)
             }
         }
+
+        if item.isEncrypted {
+            let tempDir = FileManager.default.temporaryDirectory
+            if item.fileURL.path.hasPrefix(tempDir.path) {
+                try? FileManager.default.removeItem(at: item.fileURL)
+            }
+        }
     }
 }
 
@@ -125,12 +151,14 @@ enum ShareError: Error, LocalizedError {
     case compressionFailed(String)
     case uploadFailed(String)
     case urlGenerationFailed(String)
+    case encryptionFailed(String)
 
     var errorDescription: String? {
         switch self {
         case .compressionFailed(let msg): return "Compression failed: \(msg)"
         case .uploadFailed(let msg): return "Upload failed: \(msg)"
         case .urlGenerationFailed(let msg): return "URL generation failed: \(msg)"
+        case .encryptionFailed(let msg): return "Encryption failed: \(msg)"
         }
     }
 }

@@ -10,6 +10,10 @@ struct ShareSheetView: View {
     @State private var isSharing = false
     @State private var showSuccess = false
     @State private var showRecipientFields = false
+    @State private var encryptionPassword: String = ""
+    @State private var confirmPassword: String = ""
+    @State private var showEncryptionDisclosure = false
+    @State private var passwordMismatch = false
 
     @Environment(\.dismiss) private var dismiss
 
@@ -112,6 +116,29 @@ struct ShareSheetView: View {
             }
             .padding(.horizontal, 20)
 
+            DisclosureGroup("Encrypt with Password (Optional)", isExpanded: $showEncryptionDisclosure) {
+                VStack(alignment: .leading, spacing: 8) {
+                    SecureField("Password", text: $encryptionPassword)
+                        .textFieldStyle(.roundedBorder)
+
+                    SecureField("Confirm Password", text: $confirmPassword)
+                        .textFieldStyle(.roundedBorder)
+
+                    if passwordMismatch {
+                        Text("Passwords do not match")
+                            .font(.caption)
+                            .foregroundColor(.red)
+                    }
+
+                    Text("File will be encrypted with AES-256-CBC before upload. Share the password separately — it will NOT be included in the email.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                .padding(.top, 4)
+            }
+            .padding(.horizontal, 20)
+
             Divider()
                 .padding(.vertical, 8)
 
@@ -122,6 +149,14 @@ struct ShareSheetView: View {
                 .keyboardShortcut(.escape)
 
                 Button("Share") {
+                    if showEncryptionDisclosure && !encryptionPassword.isEmpty {
+                        guard encryptionPassword == confirmPassword else {
+                            passwordMismatch = true
+                            return
+                        }
+                        passwordMismatch = false
+                        shareItem.encryptionPassword = encryptionPassword
+                    }
                     Task { await startShare() }
                 }
                 .buttonStyle(.borderedProminent)
@@ -163,6 +198,7 @@ struct ShareSheetView: View {
         switch shareItem.state {
         case .pending: return "clock"
         case .compressing: return "archivebox"
+        case .encrypting: return "lock.shield"
         case .uploading: return "arrow.up.circle"
         case .generatingURL: return "link"
         case .complete: return "checkmark.circle"
@@ -174,6 +210,7 @@ struct ShareSheetView: View {
         switch shareItem.state {
         case .pending: return "Preparing..."
         case .compressing: return "Compressing..."
+        case .encrypting: return "Encrypting..."
         case .uploading: return "Uploading... \(Int(shareItem.progress * 100))%"
         case .generatingURL: return "Generating link..."
         case .complete: return "Complete!"
@@ -291,6 +328,10 @@ struct ShareSheetView: View {
         body += expiryText + "\n"
         if !item.recipientInfo.personalMessage.isEmpty {
             body += "\nMessage from sender:\n\(item.recipientInfo.personalMessage)\n"
+        }
+
+        if item.isEncrypted {
+            body += "\n\nThis file is password-protected. The sender will provide the password separately."
         }
 
         guard let encodedSubject = subject.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed),
