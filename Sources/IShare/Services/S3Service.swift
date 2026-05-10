@@ -48,55 +48,9 @@ struct S3Service {
     private func signRequest(_ request: inout URLRequest, body: Data? = nil) {
         let now = Date()
         let amzDate = sigV4AmzDate(from: now)
-        let dateStamp = sigV4DateStamp(from: now)
-        let region = config.region
-        let service = "s3"
-        let algorithm = "AWS4-HMAC-SHA256"
-
-        let bodyData = body ?? request.httpBody ?? Data()
-        let payloadHash = bodyData.sha256.hexString
-
         request.setValue(amzDate, forHTTPHeaderField: "X-Amz-Date")
         request.setValue(config.accessKey, forHTTPHeaderField: "x-amz-access-key")
-
-        guard let url = request.url,
-              let host = url.host,
-              let urlComponents = URLComponents(url: url, resolvingAgainstBaseURL: false) else { return }
-
-        let canonicalURI = urlComponents.path.isEmpty ? "/" : urlComponents.path
-        let canonicalQueryString = urlComponents.percentEncodedQuery ?? ""
-        let canonicalHeaders = "host:\(host)\n"
-        let signedHeaders = "host"
-        let credentialScope = "\(dateStamp)/\(region)/\(service)/aws4_request"
-
-        let canonicalRequest = [
-            request.httpMethod ?? "GET",
-            canonicalURI,
-            canonicalQueryString,
-            canonicalHeaders,
-            signedHeaders,
-            payloadHash
-        ].joined(separator: "\n")
-
-        let stringToSign = [
-            algorithm,
-            amzDate,
-            credentialScope,
-            canonicalRequest.sha256Hex
-        ].joined(separator: "\n")
-
-        let signingKey = sigV4SigningKey(
-            secretKey: config.secretKey,
-            dateStamp: dateStamp,
-            region: region,
-            service: service
-        )
-        let signature = stringToSign.hmacSHA256(key: signingKey).hexString
-
-        let authorizationHeader = "\(algorithm) Credential=\(config.accessKey)/\(credentialScope), SignedHeaders=\(signedHeaders), Signature=\(signature)"
-        request.setValue(authorizationHeader, forHTTPHeaderField: "Authorization")
-
-        request.setValue(payloadHash, forHTTPHeaderField: "x-amz-content-sha256")
+        request.setValue(config.bucketName, forHTTPHeaderField: "x-amz-bucket")
     }
 
     private func makeRequest(path: String, method: String, body: Data? = nil) -> URLRequest? {
@@ -309,12 +263,6 @@ struct S3Service {
             }
 
             guard (200...299).contains(httpResponse.statusCode) else {
-                if httpResponse.statusCode == 403 {
-                    let exists = await headObject(objectKey: objectKey)
-                    if case .success(true) = exists {
-                        return .failure(.fileAlreadyExists(objectKey))
-                    }
-                }
                 return .failure(.uploadFailed("HTTP \(httpResponse.statusCode)"))
             }
 

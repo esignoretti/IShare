@@ -7,9 +7,9 @@
 
 ### Configuration
 
-- [ ] **CONF-01**: User can enter S3 endpoint URL, access key, secret key, and bucket name in a setup UI
-- [ ] **CONF-02**: App auto-creates the bucket if it doesn't exist on first run
-- [ ] **CONF-03**: Configuration persists across app restarts
+- [x] **CONF-01**: User can enter S3 endpoint URL, access key, secret key, and bucket name in a setup UI
+- [x] **CONF-02**: App auto-creates the bucket if it doesn't exist on first run
+- [x] **CONF-03**: Configuration persists across app restarts
 
 ### Sharing
 
@@ -59,25 +59,25 @@
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| CONF-01 | Phase 1 | Pending |
-| CONF-02 | Phase 1 | Pending |
-| CONF-03 | Phase 1 | Pending |
-| SHAR-01 | Phase 2 | Pending |
-| SHAR-02 | Phase 2 | Pending |
-| SHAR-03 | Phase 2 | Pending |
-| SHAR-04 | Phase 2 | Pending |
-| SHAR-05 | Phase 4 | Pending |
-| SHAR-06 | Phase 3 | Pending |
-| SHAR-07 | Phase 2 | Pending |
-| SHAR-08 | Phase 2 | Pending |
-| SHAR-09 | Phase 3 | Pending |
-| SHAR-10 | Phase 4 | Pending |
-| SHAR-11 | Phase 4 | Pending |
-| TRAY-01 | Phase 5 | Pending |
-| TRAY-02 | Phase 5 | Pending |
-| TRAY-03 | Phase 5 | Pending |
-| TRAY-04 | Phase 5 | Pending |
-| DIST-01 | Phase 6 | Pending |
+| CONF-01 | Phase 1 | ✓ Complete |
+| CONF-02 | Phase 1 | ✓ Complete |
+| CONF-03 | Phase 1 | ✓ Complete |
+| SHAR-01 | Phase 2 | ✓ Complete |
+| SHAR-02 | Phase 2 | ✓ Complete |
+| SHAR-03 | Phase 2 | ✓ Complete |
+| SHAR-04 | Phase 2 | ✓ Complete |
+| SHAR-05 | Phase 4 | ✓ Complete |
+| SHAR-06 | Phase 3 | ✓ Complete |
+| SHAR-07 | Phase 2 | ✓ Complete |
+| SHAR-08 | Phase 2 | ✓ Complete |
+| SHAR-09 | Phase 3 | ✓ Complete |
+| SHAR-10 | Phase 4 | ✓ Complete |
+| SHAR-11 | Phase 4 | ✓ Complete |
+| TRAY-01 | Phase 5 | ✓ Complete |
+| TRAY-02 | Phase 5 | ✓ Complete |
+| TRAY-03 | Phase 5 | ✓ Complete |
+| TRAY-04 | Phase 5 | ✓ Complete |
+| DIST-01 | Phase 6 | ✓ Complete |
 
 **Coverage:**
 - v1 requirements: 19 total

@@ -45,9 +45,9 @@ Plans:
 7. User sees a success notification after upload
 
 Plans:
-- [ ] 02-01-PLAN.md — S3 upload + SigV4 pre-signed URL generation
-- [ ] 02-02-PLAN.md — ShareItem model, zip compression, duration picker UI, share sheet
-- [ ] 02-03-PLAN.md — Finder Services integration, NSApplicationDelegate, auto-start, cleanup
+- [x] 02-01-PLAN.md — S3 upload + SigV4 pre-signed URL generation
+- [x] 02-02-PLAN.md — ShareItem model, zip compression, duration picker UI, share sheet
+- [x] 02-03-PLAN.md — Finder Services integration, NSApplicationDelegate, auto-start, cleanup
 
 ### Phase 3: Lifecycle & Email Notification
 **Goal:** S3 lifecycle rules clean up expired files; system mail notifies recipient
@@ -61,8 +61,8 @@ Plans:
 5. Draft includes pre-signed URL, expiry date/time, file name, and sender's personal message
 
 Plans:
-- [ ] 03-01-PLAN.md — S3 lifecycle rule configuration for all duration prefixes
-- [ ] 03-02-PLAN.md — Recipient info model, recipient fields UI, system mail integration
+- [x] 03-01-PLAN.md — S3 lifecycle rule configuration for all duration prefixes
+- [x] 03-02-PLAN.md — Recipient info model, recipient fields UI, system mail integration
 
 ### Phase 4: Password Encryption
 **Goal:** Optional password-based encryption before upload
@@ -76,8 +76,8 @@ Plans:
 5. Tray list shows a lock indicator for encrypted files
 
 Plans:
-- [ ] 04-01-PLAN.md — EncryptionService, ShareItem encryption fields, ShareService encryption wiring
-- [ ] 04-02-PLAN.md — Encryption toggle UI, password fields, SHAR-11 email compliance
+- [x] 04-01-PLAN.md — EncryptionService, ShareItem encryption fields, ShareService encryption wiring
+- [x] 04-02-PLAN.md — Encryption toggle UI, password fields, SHAR-11 email compliance
 
 ### Phase 5: Menu Bar Tray
 **Goal:** Persistent tray list with copy-link and delete
@@ -108,4 +108,4 @@ Plans:
 5. DMG includes a nice background and Applications shortcut
 
 Plans:
-- [ ] 06-01-PLAN.md — Automated build-release.sh: .app bundle assembly, ad-hoc code signing, UDZO DMG with background image and Applications symlink
+- [x] 06-01-PLAN.md — Automated build-release.sh: .app bundle assembly, ad-hoc code signing, UDZO DMG with background image and Applications symlink
