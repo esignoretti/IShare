@@ -5,7 +5,7 @@
 See: `.planning/PROJECT.md` (updated 2026-05-10)
 
 **Core value:** Users can share any file or directory from Finder in seconds
-**Current focus:** Phase 6 — Distribution
+**Current focus:** Project complete
 
 ## Phase Progress
 
@@ -16,7 +16,7 @@ See: `.planning/PROJECT.md` (updated 2026-05-10)
 | 3 — Lifecycle & Email Notification | ✓ Complete | 2/2 | 100% |
 | 4 — Password Encryption | ✓ Complete | 2/2 | 100% |
 | 5 — Menu Bar Tray | ✓ Complete | 2/2 | 100% |
-| 6 — Distribution | ▲ Planned | 1/1 | 0% |
+| 6 — Distribution | ✓ Complete | 1/1 | 100% |
 
 Progress: ██████████████████████████████ 100%
 
@@ -24,11 +24,11 @@ Progress: ███████████████████████�
 
 **Phase 6: Distribution** — Package as distributable .dmg
 
-Status: Planned — 1 plan in 1 wave
+Status: Complete — 1 plan in 1 wave
 
 ## Recent Activity
 
-- 2026-05-10: Phase 6 planned — build-release.sh with .app bundle assembly, ad-hoc code signing, UDZO DMG creation
+- 2026-05-10: Phase 6 executed — build-release.sh, .app bundle, ad-hoc signing, UDZO DMG with verification
 - 2026-05-10: Phase 5 executed — SharedFileRecord, ShareHistoryStore, S3Service.deleteFile, MenuBarTrayView, MenuBarExtra integration
 - 2026-05-10: Phase 4 executed — openssl AES-256-CBC encryption, encryption UI, SHAR-11 compliance
 - 2026-05-10: Phase 3 executed — lifecycle rules + recipient notification + system mail integration
@@ -38,4 +38,4 @@ Status: Planned — 1 plan in 1 wave
 
 ## Next Action
 
-`/gsd-plan-phase 6` — Plan the Distribution phase
+All 6 phases complete. Project is fully implemented.

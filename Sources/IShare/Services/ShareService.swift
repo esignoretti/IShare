@@ -138,7 +138,7 @@ struct ShareService {
                 isEncrypted: mutableItem.isEncrypted,
                 presignedURL: mutableItem.presignedURL
             )
-            await shareHistoryStore.add(record)
+            shareHistoryStore.add(record)
         }
 
         onUpdate(mutableItem)

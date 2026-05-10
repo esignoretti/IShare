@@ -43,6 +43,60 @@ struct S3Service {
         return components.url
     }
 
+    private func signRequest(_ request: inout URLRequest, body: Data? = nil) {
+        let now = Date()
+        let amzDate = sigV4AmzDate(from: now)
+        let dateStamp = sigV4DateStamp(from: now)
+        let region = config.region
+        let service = "s3"
+        let algorithm = "AWS4-HMAC-SHA256"
+
+        let bodyData = body ?? request.httpBody ?? Data()
+        let payloadHash = bodyData.sha256.hexString
+
+        request.setValue(amzDate, forHTTPHeaderField: "X-Amz-Date")
+        request.setValue(config.accessKey, forHTTPHeaderField: "x-amz-access-key")
+
+        guard let url = request.url,
+              let host = url.host,
+              let urlComponents = URLComponents(url: url, resolvingAgainstBaseURL: false) else { return }
+
+        let canonicalURI = urlComponents.path.isEmpty ? "/" : urlComponents.path
+        let canonicalQueryString = urlComponents.percentEncodedQuery ?? ""
+        let canonicalHeaders = "host:\(host)\n"
+        let signedHeaders = "host"
+        let credentialScope = "\(dateStamp)/\(region)/\(service)/aws4_request"
+
+        let canonicalRequest = [
+            request.httpMethod ?? "GET",
+            canonicalURI,
+            canonicalQueryString,
+            canonicalHeaders,
+            signedHeaders,
+            payloadHash
+        ].joined(separator: "\n")
+
+        let stringToSign = [
+            algorithm,
+            amzDate,
+            credentialScope,
+            canonicalRequest.sha256Hex
+        ].joined(separator: "\n")
+
+        let signingKey = sigV4SigningKey(
+            secretKey: config.secretKey,
+            dateStamp: dateStamp,
+            region: region,
+            service: service
+        )
+        let signature = stringToSign.hmacSHA256(key: signingKey).hexString
+
+        let authorizationHeader = "\(algorithm) Credential=\(config.accessKey)/\(credentialScope), SignedHeaders=\(signedHeaders), Signature=\(signature)"
+        request.setValue(authorizationHeader, forHTTPHeaderField: "Authorization")
+
+        request.setValue(payloadHash, forHTTPHeaderField: "x-amz-content-sha256")
+    }
+
     private func makeRequest(path: String, method: String, body: Data? = nil) -> URLRequest? {
         guard let base = baseURL else { return nil }
         let url = base.appendingPathComponent(path)
@@ -73,8 +127,7 @@ struct S3Service {
 
         var request = URLRequest(url: base)
         request.httpMethod = "GET"
-        request.setValue(config.accessKey, forHTTPHeaderField: "x-amz-access-key")
-        request.setValue(ISO8601DateFormatter().string(from: Date()), forHTTPHeaderField: "Date")
+        signRequest(&request)
 
         do {
             let (data, response) = try await URLSession.shared.data(for: request)
@@ -119,8 +172,7 @@ struct S3Service {
         let url = base.appendingPathComponent(config.bucketName)
         var request = URLRequest(url: url)
         request.httpMethod = "HEAD"
-        request.setValue(config.accessKey, forHTTPHeaderField: "x-amz-access-key")
-        request.setValue(ISO8601DateFormatter().string(from: Date()), forHTTPHeaderField: "Date")
+        signRequest(&request)
 
         do {
             let (_, response) = try await URLSession.shared.data(for: request)
@@ -150,8 +202,6 @@ struct S3Service {
         let url = base.appendingPathComponent(config.bucketName)
         var request = URLRequest(url: url)
         request.httpMethod = "PUT"
-        request.setValue(config.accessKey, forHTTPHeaderField: "x-amz-access-key")
-        request.setValue(ISO8601DateFormatter().string(from: Date()), forHTTPHeaderField: "Date")
 
         if config.region != "us-east-1" {
             let locationConstraintXML = """
@@ -162,6 +212,8 @@ struct S3Service {
             request.httpBody = locationConstraintXML.data(using: .utf8)
             request.setValue("application/xml", forHTTPHeaderField: "Content-Type")
         }
+
+        signRequest(&request)
 
         do {
             let (_, response) = try await URLSession.shared.data(for: request)
@@ -223,10 +275,9 @@ struct S3Service {
         var request = URLRequest(url: url)
         request.httpMethod = "PUT"
         request.httpBody = fileData
-        request.setValue(config.accessKey, forHTTPHeaderField: "x-amz-access-key")
-        request.setValue(ISO8601DateFormatter().string(from: Date()), forHTTPHeaderField: "Date")
         request.setValue("application/octet-stream", forHTTPHeaderField: "Content-Type")
         request.setValue("\(fileData.count)", forHTTPHeaderField: "Content-Length")
+        signRequest(&request)
 
         do {
             let (_, response) = try await URLSession.shared.data(for: request)
@@ -351,8 +402,7 @@ struct S3Service {
         let url = base.appendingPathComponent(config.bucketName).appendingPathComponent(objectKey)
         var request = URLRequest(url: url)
         request.httpMethod = "DELETE"
-        request.setValue(config.accessKey, forHTTPHeaderField: "x-amz-access-key")
-        request.setValue(ISO8601DateFormatter().string(from: Date()), forHTTPHeaderField: "Date")
+        signRequest(&request)
 
         do {
             let (_, response) = try await URLSession.shared.data(for: request)
@@ -434,10 +484,9 @@ struct S3Service {
         var request = URLRequest(url: lifecycleURL)
         request.httpMethod = "PUT"
         request.httpBody = xmlData
-        request.setValue(config.accessKey, forHTTPHeaderField: "x-amz-access-key")
-        request.setValue(ISO8601DateFormatter().string(from: Date()), forHTTPHeaderField: "Date")
         request.setValue("application/xml", forHTTPHeaderField: "Content-Type")
         request.setValue("\(xmlData.count)", forHTTPHeaderField: "Content-Length")
+        signRequest(&request)
 
         do {
             let (_, response) = try await URLSession.shared.data(for: request)
