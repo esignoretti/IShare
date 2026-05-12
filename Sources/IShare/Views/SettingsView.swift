@@ -2,9 +2,6 @@ import SwiftUI
 
 struct SettingsView: View {
     @ObservedObject var configStore: ConfigStore
-    @State private var endpointURL: String = ""
-    @State private var accessKey: String = ""
-    @State private var secretKey: String = ""
     @State private var bucketName: String = ""
     @State private var region: String = "us-east-1"
 
@@ -16,31 +13,57 @@ struct SettingsView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            Text("S3 Configuration")
+            Text("S3 Bucket Configuration")
                 .font(.title2)
                 .fontWeight(.semibold)
                 .padding(.vertical, 16)
 
+            if let account = configStore.ds3Auth.currentAccount {
+                HStack {
+                    Image(systemName: "person.circle")
+                        .foregroundStyle(.secondary)
+                    Text("\(account.firstName) \(account.lastName)")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                }
+                .padding(.bottom, 8)
+            }
+
             Form {
                 Section {
-                    TextField("Endpoint URL", text: $endpointURL)
-                        .textFieldStyle(.roundedBorder)
-                    TextField("Access Key", text: $accessKey)
-                        .textFieldStyle(.roundedBorder)
-                    SecureField("Secret Key", text: $secretKey)
-                        .textFieldStyle(.roundedBorder)
                     TextField("Bucket Name", text: $bucketName)
                         .textFieldStyle(.roundedBorder)
                     TextField("Region", text: $region)
                         .textFieldStyle(.roundedBorder)
                 } header: {
-                    Text("S3 Credentials")
+                    Text("S3 Bucket")
                 }
             }
             .formStyle(.grouped)
 
-            ConnectionStatusView(status: connectionStatus)
-                .padding(.bottom, 8)
+            VStack(spacing: 4) {
+                if connectionStatus == .testing {
+                    HStack(spacing: 8) {
+                        ProgressView()
+                            .scaleEffect(0.8)
+                        Text("Testing...")
+                            .font(.callout)
+                            .foregroundStyle(.secondary)
+                    }
+                } else if case .failed(let msg) = connectionStatus {
+                    Text(msg)
+                        .font(.callout)
+                        .foregroundColor(.red)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal)
+                } else if connectionStatus == .connected {
+                    Text("Connection successful")
+                        .font(.callout)
+                        .foregroundColor(.green)
+                }
+            }
+            .padding(.horizontal)
+            .frame(height: 40)
 
             if let error = errorMessage {
                 Text(error)
@@ -61,6 +84,11 @@ struct SettingsView: View {
                 .buttonStyle(.borderedProminent)
                 .disabled(isTesting || !formValid)
 
+                Button("Disconnect") {
+                    configStore.clear()
+                    dismiss()
+                }
+
                 Button("Cancel") {
                     dismiss()
                 }
@@ -70,17 +98,13 @@ struct SettingsView: View {
         .frame(width: 480)
         .fixedSize()
         .onAppear {
-            endpointURL = configStore.config.endpointURL
-            accessKey = configStore.config.accessKey
-            secretKey = configStore.config.secretKey
             bucketName = configStore.config.bucketName
             region = configStore.config.region
         }
     }
 
     private var formValid: Bool {
-        !endpointURL.isEmpty && !accessKey.isEmpty
-            && !secretKey.isEmpty && !bucketName.isEmpty
+        !bucketName.isEmpty
     }
 
     private func testConnection() async {
@@ -88,8 +112,16 @@ struct SettingsView: View {
         connectionStatus = .testing
         errorMessage = nil
 
+        guard let endpoint = configStore.ds3Auth.endpointGateway,
+              let accessKey = configStore.ds3Auth.s3AccessKey,
+              let secretKey = configStore.ds3Auth.s3SecretKey else {
+            connectionStatus = .failed("DS3 authentication data unavailable")
+            isTesting = false
+            return
+        }
+
         let config = S3Config(
-            endpointURL: endpointURL,
+            endpointURL: endpoint,
             accessKey: accessKey,
             secretKey: secretKey,
             bucketName: bucketName,
@@ -113,8 +145,16 @@ struct SettingsView: View {
         connectionStatus = .testing
         errorMessage = nil
 
+        guard let endpoint = configStore.ds3Auth.endpointGateway,
+              let accessKey = configStore.ds3Auth.s3AccessKey,
+              let secretKey = configStore.ds3Auth.s3SecretKey else {
+            connectionStatus = .failed("DS3 authentication data unavailable")
+            isTesting = false
+            return
+        }
+
         let config = S3Config(
-            endpointURL: endpointURL,
+            endpointURL: endpoint,
             accessKey: accessKey,
             secretKey: secretKey,
             bucketName: bucketName,

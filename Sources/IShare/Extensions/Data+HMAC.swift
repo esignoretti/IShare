@@ -44,7 +44,8 @@ extension String {
     }
 
     var uriEncoded: String {
-        addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? self
+        let allowed = CharacterSet(charactersIn: "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~")
+        return addingPercentEncoding(withAllowedCharacters: allowed) ?? self
     }
 }
 

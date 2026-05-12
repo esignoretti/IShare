@@ -25,6 +25,12 @@ struct ConnectionStatusView: View {
                 Text("Connected")
                     .foregroundStyle(.primary)
 
+            case .loggedIn:
+                Image(systemName: "checkmark.circle.fill")
+                    .foregroundStyle(.green)
+                Text("Signed in")
+                    .foregroundStyle(.primary)
+
             case .failed(let reason):
                 Image(systemName: "xmark.circle.fill")
                     .foregroundStyle(.red)

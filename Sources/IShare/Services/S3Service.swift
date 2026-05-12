@@ -287,7 +287,8 @@ struct S3Service {
             return .failure(.presignFailed("Invalid endpoint URL"))
         }
 
-        components.path = "/\(config.bucketName)/\(objectKey)"
+        let resourcePath = "/\(config.bucketName)/\(objectKey)"
+        components.path = resourcePath
 
         let now = Date()
         let amzDate = sigV4AmzDate(from: now)
@@ -303,24 +304,23 @@ struct S3Service {
         let credentialScope = "\(dateStamp)/\(region)/\(service)/aws4_request"
         let credential = "\(config.accessKey)/\(credentialScope)"
 
-        var queryItems: [URLQueryItem] = [
-            URLQueryItem(name: "X-Amz-Algorithm", value: algorithm),
-            URLQueryItem(name: "X-Amz-Credential", value: credential),
-            URLQueryItem(name: "X-Amz-Date", value: amzDate),
-            URLQueryItem(name: "X-Amz-Expires", value: "\(durationSeconds)"),
-            URLQueryItem(name: "X-Amz-SignedHeaders", value: "host"),
+        var queryItems: [(String, String)] = [
+            ("X-Amz-Algorithm", algorithm),
+            ("X-Amz-Credential", credential),
+            ("X-Amz-Date", amzDate),
+            ("X-Amz-Expires", "\(durationSeconds)"),
+            ("X-Amz-SignedHeaders", "host"),
         ]
 
-        queryItems.sort { $0.name < $1.name || ($0.name == $1.name && ($0.value ?? "") < ($1.value ?? "")) }
+        queryItems.sort { $0.0 < $1.0 || ($0.0 == $1.0 && $0.1 < $1.1) }
 
         let canonicalQueryString = queryItems
-            .compactMap { item -> String? in
-                guard let value = item.value else { return nil }
-                return "\(item.name.uriEncoded)=\(value.uriEncoded)"
+            .map { (name, value) in
+                "\(name.uriEncoded)=\(value.uriEncoded)"
             }
             .joined(separator: "&")
 
-        let canonicalURI = components.path
+        let canonicalURI = resourcePath
         let canonicalHeaders = "host:\(host)\n"
         let signedHeaders = "host"
         let payloadHash = "UNSIGNED-PAYLOAD"
@@ -349,22 +349,16 @@ struct S3Service {
         )
         let signature = stringToSign.hmacSHA256(key: signingKey).hexString
 
-        var finalQueryItems = queryItems
-        finalQueryItems.append(URLQueryItem(name: "X-Amz-Signature", value: signature))
-        components.percentEncodedQuery = finalQueryItems
-            .compactMap { item -> String? in
-                guard let value = item.value else { return nil }
-                let encodedName = item.name.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? item.name
-                let encodedValue = value.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? value
-                return "\(encodedName)=\(encodedValue)"
+        let allItems = queryItems + [("X-Amz-Signature", signature)]
+        let queryString = allItems
+            .map { (name, value) in
+                "\(name.uriEncoded)=\(value.uriEncoded)"
             }
             .joined(separator: "&")
 
-        guard let presignedURL = components.url else {
-            return .failure(.presignFailed("Failed to construct URL"))
-        }
+        let presignedURL = "\(base.scheme ?? "https")://\(host)\(resourcePath)?\(queryString)"
 
-        return .success(presignedURL.absoluteString)
+        return .success(presignedURL)
     }
 
     // MARK: - File Delete

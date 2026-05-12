@@ -1,39 +1,61 @@
 import SwiftUI
 
+enum LoginStep {
+    case credentials
+    case bucketConfig
+}
+
 struct ConfigView: View {
     @ObservedObject var configStore: ConfigStore
 
-    @State private var endpointURL: String = ""
+    @State private var email: String = ""
+    @State private var password: String = ""
+    @State private var tfaCode: String = ""
+    @State private var showTFA: Bool = false
+    @State private var tenant: String = ""
 
-    init(configStore: ConfigStore) {
-        self.configStore = configStore
-    }
-    @State private var accessKey: String = ""
-    @State private var secretKey: String = ""
     @State private var bucketName: String = ""
     @State private var region: String = "us-east-1"
 
-    @State private var isTesting = false
+    @State private var step: LoginStep = .credentials
+
+    @State private var isProcessing = false
     @State private var connectionStatus: ConnectionStatus = .idle
     @State private var errorMessage: String?
 
     enum ConnectionStatus: Equatable {
         case idle
         case testing
+        case loggedIn
         case connected
         case failed(String)
     }
 
     var body: some View {
         VStack(spacing: 0) {
+            switch step {
+            case .credentials:
+                credentialsView
+            case .bucketConfig:
+                bucketConfigView
+            }
+        }
+        .frame(width: 480)
+        .fixedSize()
+    }
+
+    // MARK: - Credentials View
+
+    private var credentialsView: some View {
+        VStack(spacing: 0) {
             VStack(spacing: 4) {
                 Image(systemName: "externaldrive.connected.to.line.below.fill")
                     .font(.system(size: 32))
                     .foregroundStyle(.tint)
-                Text("Connect to S3 Storage")
+                Text("Connect to Cubbit DS3")
                     .font(.title2)
                     .fontWeight(.semibold)
-                Text("Enter your S3-compatible storage credentials")
+                Text("Sign in with your Cubbit account")
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
             }
@@ -41,16 +63,61 @@ struct ConfigView: View {
 
             Form {
                 Section {
-                    TextField("Endpoint URL", text: $endpointURL)
-                        .textFieldStyle(.roundedBorder)
-                        .help("e.g. https://ds3.cubbit.eu")
-
-                    TextField("Access Key", text: $accessKey)
+                    TextField("Email", text: $email)
                         .textFieldStyle(.roundedBorder)
 
-                    SecureField("Secret Key", text: $secretKey)
+                    SecureField("Password", text: $password)
                         .textFieldStyle(.roundedBorder)
 
+                    TextField("Tenant ID (optional)", text: $tenant)
+                        .textFieldStyle(.roundedBorder)
+                        .help("Leave empty for default tenant")
+
+                    if showTFA {
+                        TextField("2FA Code", text: $tfaCode)
+                            .textFieldStyle(.roundedBorder)
+                    }
+                } header: {
+                    Text("Cubbit Account")
+                }
+            }
+            .formStyle(.grouped)
+            .frame(minHeight: 200)
+
+            statusSection
+
+            Button {
+                Task { await login() }
+            } label: {
+                Text("Sign In")
+                    .frame(maxWidth: .infinity)
+            }
+            .buttonStyle(.borderedProminent)
+            .disabled(isProcessing || email.isEmpty || password.isEmpty)
+            .padding(.horizontal, 20)
+            .padding(.bottom, 16)
+        }
+    }
+
+    // MARK: - Bucket Config View
+
+    private var bucketConfigView: some View {
+        VStack(spacing: 0) {
+            VStack(spacing: 4) {
+                Image(systemName: "checkmark.circle.fill")
+                    .font(.system(size: 32))
+                    .foregroundStyle(.green)
+                Text("Signed in as \(email)")
+                    .font(.title2)
+                    .fontWeight(.semibold)
+                Text("Configure your S3 bucket")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+            }
+            .padding(.vertical, 20)
+
+            Form {
+                Section {
                     TextField("Bucket Name", text: $bucketName)
                         .textFieldStyle(.roundedBorder)
                         .help("Bucket will be auto-created if it doesn't exist")
@@ -59,59 +126,125 @@ struct ConfigView: View {
                         .textFieldStyle(.roundedBorder)
                         .help("Default: us-east-1")
                 } header: {
-                    Text("S3 Credentials")
+                    Text("S3 Bucket")
                 }
             }
             .formStyle(.grouped)
-            .frame(minHeight: 280)
+            .frame(minHeight: 140)
 
-            ConnectionStatusView(status: connectionStatus)
-
-            if let error = errorMessage {
-                Text(error)
-                    .font(.callout)
-                    .foregroundColor(.red)
-                    .multilineTextAlignment(.center)
-                    .padding(.horizontal)
-            }
+            statusSection
 
             HStack(spacing: 12) {
                 Button("Test Connection") {
                     Task { await testConnection() }
                 }
-                .disabled(isTesting || !formValid)
+                .disabled(isProcessing || !bucketNameValid)
 
                 Button("Save & Connect") {
                     Task { await saveAndConnect() }
                 }
                 .buttonStyle(.borderedProminent)
-                .disabled(isTesting || !formValid)
+                .disabled(isProcessing || !bucketNameValid)
+
+                Button("Disconnect") {
+                    configStore.clear()
+                    resetToCredentials()
+                }
             }
             .padding(.vertical, 16)
         }
-        .frame(width: 480)
-        .fixedSize()
-        .onAppear {
-            endpointURL = configStore.config.endpointURL
-            accessKey = configStore.config.accessKey
-            secretKey = configStore.config.secretKey
-            bucketName = configStore.config.bucketName
-            region = configStore.config.region
+    }
+
+    // MARK: - Common
+
+    private var statusSection: some View {
+        VStack(spacing: 4) {
+            if connectionStatus == .testing {
+                HStack(spacing: 8) {
+                    ProgressView()
+                        .scaleEffect(0.8)
+                    Text("Working...")
+                        .font(.callout)
+                        .foregroundStyle(.secondary)
+                }
+            } else if case .failed(let msg) = connectionStatus {
+                Text(msg)
+                    .font(.callout)
+                    .foregroundColor(.red)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal)
+            } else if connectionStatus == .connected {
+                Text("Connected successfully")
+                    .font(.callout)
+                    .foregroundColor(.green)
+            }
         }
+        .padding(.horizontal)
+        .frame(height: 40)
     }
 
-    private var formValid: Bool {
-        !endpointURL.isEmpty && !accessKey.isEmpty
-            && !secretKey.isEmpty && !bucketName.isEmpty
+    private var bucketNameValid: Bool {
+        !bucketName.isEmpty
     }
 
-    private func testConnection() async {
-        isTesting = true
+    private func resetToCredentials() {
+        step = .credentials
+        connectionStatus = .idle
+        errorMessage = nil
+        password = ""
+        tfaCode = ""
+        showTFA = false
+    }
+
+    // MARK: - Login
+
+    private func login() async {
+        isProcessing = true
         connectionStatus = .testing
         errorMessage = nil
 
+        do {
+            try await configStore.ds3Auth.login(
+                email: email,
+                password: password,
+                tfaCode: tfaCode.isEmpty ? nil : tfaCode,
+                tenant: tenant.isEmpty ? nil : tenant
+            )
+
+            connectionStatus = .loggedIn
+            step = .bucketConfig
+            isProcessing = false
+        } catch DS3AuthError.missing2FA {
+            showTFA = true
+            connectionStatus = .idle
+            errorMessage = "Two-factor authentication code required"
+            isProcessing = false
+        } catch DS3AuthError.serverError(let code, let body) {
+            connectionStatus = .failed("Server error (\(code)): \(body.prefix(200))")
+            isProcessing = false
+        } catch {
+            connectionStatus = .failed(error.localizedDescription)
+            isProcessing = false
+        }
+    }
+
+    // MARK: - Test & Save
+
+    private func testConnection() async {
+        isProcessing = true
+        connectionStatus = .testing
+        errorMessage = nil
+
+        guard let endpoint = configStore.ds3Auth.endpointGateway,
+              let accessKey = configStore.ds3Auth.s3AccessKey,
+              let secretKey = configStore.ds3Auth.s3SecretKey else {
+            connectionStatus = .failed("DS3 authentication incomplete")
+            isProcessing = false
+            return
+        }
+
         let config = S3Config(
-            endpointURL: endpointURL,
+            endpointURL: endpoint,
             accessKey: accessKey,
             secretKey: secretKey,
             bucketName: bucketName,
@@ -128,16 +261,24 @@ struct ConfigView: View {
             connectionStatus = .failed(error.localizedDescription)
         }
 
-        isTesting = false
+        isProcessing = false
     }
 
     private func saveAndConnect() async {
-        isTesting = true
+        isProcessing = true
         connectionStatus = .testing
         errorMessage = nil
 
+        guard let endpoint = configStore.ds3Auth.endpointGateway,
+              let accessKey = configStore.ds3Auth.s3AccessKey,
+              let secretKey = configStore.ds3Auth.s3SecretKey else {
+            connectionStatus = .failed("DS3 authentication incomplete")
+            isProcessing = false
+            return
+        }
+
         let config = S3Config(
-            endpointURL: endpointURL,
+            endpointURL: endpoint,
             accessKey: accessKey,
             secretKey: secretKey,
             bucketName: bucketName,
@@ -152,7 +293,7 @@ struct ConfigView: View {
             connectionStatus = .connected
         case .failure(let error):
             connectionStatus = .failed(error.localizedDescription)
-            isTesting = false
+            isProcessing = false
             return
         }
 
@@ -163,11 +304,10 @@ struct ConfigView: View {
         case .failure(let error):
             errorMessage = "Bucket setup failed: \(error.localizedDescription)"
             connectionStatus = .failed("Bucket error")
-            isTesting = false
+            isProcessing = false
             return
         }
 
-        // Configure lifecycle rules (best-effort — non-blocking)
         let lifecycleResult = await service.configureLifecycleRules()
         if case .failure(let error) = lifecycleResult {
             print("Warning: Lifecycle configuration failed: \(error.localizedDescription)")
@@ -177,10 +317,10 @@ struct ConfigView: View {
         let saved = configStore.save()
         if !saved {
             errorMessage = "Failed to save credentials to Keychain"
-            isTesting = false
+            isProcessing = false
             return
         }
 
-        isTesting = false
+        isProcessing = false
     }
 }

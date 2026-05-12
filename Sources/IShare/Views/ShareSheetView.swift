@@ -294,6 +294,9 @@ struct ShareSheetView: View {
                         self.showSuccess = true
                         self.copyToClipboard(updatedItem.presignedURL ?? "")
                     }
+                    if updatedItem.hasRecipient {
+                        composeEmail(for: updatedItem)
+                    }
                 }
             }
         }
@@ -337,12 +340,15 @@ struct ShareSheetView: View {
             body += "\n\nThis file is password-protected. The sender will provide the password separately."
         }
 
-        guard let encodedSubject = subject.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed),
-              let encodedBody = body.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) else { return }
+        var components = URLComponents()
+        components.scheme = "mailto"
+        components.path = item.recipientInfo.recipientEmail
+        components.queryItems = [
+            URLQueryItem(name: "subject", value: subject),
+            URLQueryItem(name: "body", value: body)
+        ]
 
-        let mailTo = "mailto:\(item.recipientInfo.recipientEmail)?subject=\(encodedSubject)&body=\(encodedBody)"
-        guard let url = URL(string: mailTo) else { return }
-
+        guard let url = components.url else { return }
         NSWorkspace.shared.open(url)
     }
 }
