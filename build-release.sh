@@ -29,10 +29,7 @@ create_app_bundle() {
     cp "$RELEASE_DIR/$SCHEME" "$APP_BUNDLE/Contents/MacOS/$APP_NAME"
     cp "$PROJECT_DIR/Sources/IShare/Info.plist" "$APP_BUNDLE/Contents/Info.plist"
 
-    local resource_bundle="$RELEASE_DIR/${SCHEME}_${SCHEME}.bundle"
-    if [ -d "$resource_bundle" ]; then
-        cp -R "$resource_bundle/" "$APP_BUNDLE/Contents/Resources/"
-    fi
+    cp "$PROJECT_DIR/Sources/IShare/Resources/Icons/"*.png "$APP_BUNDLE/Contents/Resources/"
 }
 
 codesign_app() {

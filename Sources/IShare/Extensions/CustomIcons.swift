@@ -1,8 +1,16 @@
 import SwiftUI
 
 extension Image {
-    static var menuBar: Image { Image("menubar-icon", bundle: .module) }
-    static var statusSuccess: Image { Image("status-success", bundle: .module) }
-    static var statusError: Image { Image("status-error", bundle: .module) }
-    static var statusUploading: Image { Image("status-uploading", bundle: .module) }
+    private static func load(_ name: String) -> Image {
+        if let path = Bundle.main.path(forResource: name, ofType: "png"),
+           let nsImage = NSImage(contentsOfFile: path) {
+            return Image(nsImage: nsImage)
+        }
+        return Image(systemName: "questionmark.square")
+    }
+
+    static var menuBar: Image { load("menubar-icon") }
+    static var statusSuccess: Image { load("status-success") }
+    static var statusError: Image { load("status-error") }
+    static var statusUploading: Image { load("status-uploading") }
 }
