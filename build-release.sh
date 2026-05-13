@@ -30,6 +30,7 @@ create_app_bundle() {
     cp "$PROJECT_DIR/Sources/IShare/Info.plist" "$APP_BUNDLE/Contents/Info.plist"
 
     cp "$PROJECT_DIR/Sources/IShare/Resources/Icons/"*.png "$APP_BUNDLE/Contents/Resources/"
+    cp "$PROJECT_DIR/Sources/IShare/Resources/Icons/"*.icns "$APP_BUNDLE/Contents/Resources/"
 }
 
 codesign_app() {
