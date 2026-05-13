@@ -112,15 +112,32 @@ final class DS3AuthService {
 
         let account = try await fetchAccountInfo()
         self.account = account
+    }
 
-        let projects = try await fetchProjects()
-        guard let firstProject = projects.first else { throw DS3AuthError.noProjects }
-        guard let rootUser = firstProject.users.first(where: { $0.isRoot }) ?? firstProject.users.first else {
-            throw DS3AuthError.noIAMUser
+    func fetchProjects() async throws -> [Project] {
+        try await refreshIfNeeded()
+        guard let session else { throw DS3AuthError.loggedOut }
+        guard let url = URL(string: urls.projectsURL) else { throw DS3AuthError.invalidURL(urls.projectsURL) }
+
+        var request = URLRequest(url: url)
+        request.allHTTPHeaderFields = [
+            "Content-Type": "application/json",
+            "Authorization": "Bearer \(session.token.token)"
+        ]
+        request.httpMethod = "GET"
+
+        let (data, response) = try await URLSession.shared.data(for: request)
+        guard let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 else {
+            let code = (response as? HTTPURLResponse)?.statusCode ?? -1
+            throw DS3AuthError.serverError(code, String(data: data, encoding: .utf8) ?? "")
         }
+        debugLog("fetchProjects", data: data, response: response)
+        return try tryDecode([Project].self, from: data, tag: "projects")
+    }
 
-        let apiKey = try await loadOrCreateApiKey(for: rootUser, projectName: firstProject.name)
-        self.apiKey = apiKey
+    func provisionApiKey(for user: IAMUser, projectName: String) async throws {
+        let key = try await loadOrCreateApiKey(for: user, projectName: projectName)
+        self.apiKey = key
     }
 
     func logout() {
@@ -251,28 +268,6 @@ final class DS3AuthService {
             throw DS3AuthError.serverError(code, String(data: data, encoding: .utf8) ?? "")
         }
         return try tryDecode(Account.self, from: data, tag: "accountInfo")
-    }
-
-    // MARK: - Projects
-
-    private func fetchProjects() async throws -> [Project] {
-        try await refreshIfNeeded()
-        guard let session else { throw DS3AuthError.loggedOut }
-        guard let url = URL(string: urls.projectsURL) else { throw DS3AuthError.invalidURL(urls.projectsURL) }
-
-        var request = URLRequest(url: url)
-        request.allHTTPHeaderFields = [
-            "Content-Type": "application/json",
-            "Authorization": "Bearer \(session.token.token)"
-        ]
-        request.httpMethod = "GET"
-
-        let (data, response) = try await URLSession.shared.data(for: request)
-        guard let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 else {
-            let code = (response as? HTTPURLResponse)?.statusCode ?? -1
-            throw DS3AuthError.serverError(code, String(data: data, encoding: .utf8) ?? "")
-        }
-        return try tryDecode([Project].self, from: data, tag: "projects")
     }
 
     // MARK: - API Keys

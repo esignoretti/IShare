@@ -2,6 +2,7 @@ import SwiftUI
 
 enum LoginStep {
     case credentials
+    case selectProject
     case bucketConfig
 }
 
@@ -14,8 +15,9 @@ struct ConfigView: View {
     @State private var showTFA: Bool = false
     @State private var tenant: String = ""
 
+    @State private var projects: [Project] = []
+    @State private var selectedProject: Project?
     @State private var bucketName: String = ""
-    @State private var region: String = "us-east-1"
 
     @State private var step: LoginStep = .credentials
 
@@ -36,6 +38,8 @@ struct ConfigView: View {
             switch step {
             case .credentials:
                 credentialsView
+            case .selectProject:
+                selectProjectView
             case .bucketConfig:
                 bucketConfigView
             }
@@ -99,6 +103,60 @@ struct ConfigView: View {
         }
     }
 
+    // MARK: - Project Selection View
+
+    private var selectProjectView: some View {
+        VStack(spacing: 0) {
+            VStack(spacing: 4) {
+                Image(systemName: "folder")
+                    .font(.system(size: 32))
+                    .foregroundStyle(.tint)
+                Text("Select Project")
+                    .font(.title2)
+                    .fontWeight(.semibold)
+                Text("Choose a project to use for sharing files")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+            }
+            .padding(.vertical, 20)
+
+            if projects.isEmpty {
+                Text("No projects found")
+                    .foregroundStyle(.secondary)
+                    .padding()
+            } else {
+                List(projects, id: \.id) { project in
+                    Button {
+                        selectedProject = project
+                        bucketName = project.name.lowercased().replacingOccurrences(of: " ", with: "-")
+                        step = .bucketConfig
+                    } label: {
+                        HStack {
+                            Image(systemName: selectedProject?.id == project.id ? "checkmark.circle.fill" : "circle")
+                                .foregroundStyle(.tint)
+                            VStack(alignment: .leading) {
+                                Text(project.name)
+                                    .fontWeight(.medium)
+                                Text("\(project.users.count) user(s)")
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                            }
+                        }
+                    }
+                    .buttonStyle(.plain)
+                }
+                .frame(height: 200)
+                .padding(.horizontal, 20)
+            }
+
+            Button("Disconnect") {
+                configStore.clear()
+                resetToCredentials()
+            }
+            .padding(.vertical, 16)
+        }
+    }
+
     // MARK: - Bucket Config View
 
     private var bucketConfigView: some View {
@@ -107,10 +165,10 @@ struct ConfigView: View {
                 Image(systemName: "checkmark.circle.fill")
                     .font(.system(size: 32))
                     .foregroundStyle(.green)
-                Text("Signed in as \(email)")
+                Text("Configure Bucket")
                     .font(.title2)
                     .fontWeight(.semibold)
-                Text("Configure your S3 bucket")
+                Text("Bucket name was auto-filled from your project")
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
             }
@@ -121,16 +179,12 @@ struct ConfigView: View {
                     TextField("Bucket Name", text: $bucketName)
                         .textFieldStyle(.roundedBorder)
                         .help("Bucket will be auto-created if it doesn't exist")
-
-                    TextField("Region", text: $region)
-                        .textFieldStyle(.roundedBorder)
-                        .help("Default: us-east-1")
                 } header: {
                     Text("S3 Bucket")
                 }
             }
             .formStyle(.grouped)
-            .frame(minHeight: 140)
+            .frame(minHeight: 100)
 
             statusSection
 
@@ -145,6 +199,10 @@ struct ConfigView: View {
                 }
                 .buttonStyle(.borderedProminent)
                 .disabled(isProcessing || !bucketNameValid)
+
+                Button("Back") {
+                    step = .selectProject
+                }
 
                 Button("Disconnect") {
                     configStore.clear()
@@ -211,8 +269,17 @@ struct ConfigView: View {
                 tenant: tenant.isEmpty ? nil : tenant
             )
 
+            let fetched = try await configStore.ds3Auth.fetchProjects()
+            projects = fetched
+
             connectionStatus = .loggedIn
-            step = .bucketConfig
+            if projects.count == 1, let project = projects.first {
+                selectedProject = project
+                bucketName = project.name.lowercased().replacingOccurrences(of: " ", with: "-")
+                step = .bucketConfig
+            } else {
+                step = .selectProject
+            }
             isProcessing = false
         } catch DS3AuthError.missing2FA {
             showTFA = true
@@ -235,10 +302,30 @@ struct ConfigView: View {
         connectionStatus = .testing
         errorMessage = nil
 
-        guard let endpoint = configStore.ds3Auth.endpointGateway,
-              let accessKey = configStore.ds3Auth.s3AccessKey,
-              let secretKey = configStore.ds3Auth.s3SecretKey else {
+        guard let endpoint = configStore.ds3Auth.endpointGateway else {
             connectionStatus = .failed("DS3 authentication incomplete")
+            isProcessing = false
+            return
+        }
+
+        guard let project = selectedProject,
+              let user = project.users.first(where: { $0.isRoot }) ?? project.users.first else {
+            connectionStatus = .failed("No IAM user for selected project")
+            isProcessing = false
+            return
+        }
+
+        do {
+            try await configStore.ds3Auth.provisionApiKey(for: user, projectName: project.name)
+        } catch {
+            connectionStatus = .failed("API key provisioning failed: \(error.localizedDescription)")
+            isProcessing = false
+            return
+        }
+
+        guard let accessKey = configStore.ds3Auth.s3AccessKey,
+              let secretKey = configStore.ds3Auth.s3SecretKey else {
+            connectionStatus = .failed("API key missing secret")
             isProcessing = false
             return
         }
@@ -248,7 +335,7 @@ struct ConfigView: View {
             accessKey: accessKey,
             secretKey: secretKey,
             bucketName: bucketName,
-            region: region
+            region: "us-east-1"
         )
 
         let service = S3Service(config: config)
@@ -269,10 +356,30 @@ struct ConfigView: View {
         connectionStatus = .testing
         errorMessage = nil
 
-        guard let endpoint = configStore.ds3Auth.endpointGateway,
-              let accessKey = configStore.ds3Auth.s3AccessKey,
-              let secretKey = configStore.ds3Auth.s3SecretKey else {
+        guard let endpoint = configStore.ds3Auth.endpointGateway else {
             connectionStatus = .failed("DS3 authentication incomplete")
+            isProcessing = false
+            return
+        }
+
+        guard let project = selectedProject,
+              let user = project.users.first(where: { $0.isRoot }) ?? project.users.first else {
+            connectionStatus = .failed("No IAM user for selected project")
+            isProcessing = false
+            return
+        }
+
+        do {
+            try await configStore.ds3Auth.provisionApiKey(for: user, projectName: project.name)
+        } catch {
+            connectionStatus = .failed("API key provisioning failed: \(error.localizedDescription)")
+            isProcessing = false
+            return
+        }
+
+        guard let accessKey = configStore.ds3Auth.s3AccessKey,
+              let secretKey = configStore.ds3Auth.s3SecretKey else {
+            connectionStatus = .failed("API key missing secret")
             isProcessing = false
             return
         }
@@ -282,7 +389,7 @@ struct ConfigView: View {
             accessKey: accessKey,
             secretKey: secretKey,
             bucketName: bucketName,
-            region: region
+            region: "us-east-1"
         )
 
         let service = S3Service(config: config)
