@@ -9,7 +9,8 @@ let package = Package(
         .executableTarget(
             name: "IShare",
             path: "Sources/IShare",
-            exclude: ["Info.plist"]
+            exclude: ["Info.plist"],
+            resources: [.process("Resources")]
         )
     ]
 )

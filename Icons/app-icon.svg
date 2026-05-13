@@ -1,0 +1,137 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <linearGradient id="bgGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#1C1C1C"/>
+      <stop offset="100%" stop-color="#040404"/>
+    </linearGradient>
+
+    <!-- Top face gradients -->
+    <linearGradient id="topTL" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#B0CFFF"/>
+      <stop offset="100%" stop-color="#8AB8FF"/>
+    </linearGradient>
+    <linearGradient id="topTR" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#8AB8FF"/>
+      <stop offset="100%" stop-color="#5498FF"/>
+    </linearGradient>
+    <linearGradient id="topBL" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#5498FF"/>
+      <stop offset="100%" stop-color="#3384FF"/>
+    </linearGradient>
+    <linearGradient id="topBR" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#3384FF"/>
+      <stop offset="100%" stop-color="#0065FF"/>
+    </linearGradient>
+
+    <!-- Left face gradients -->
+    <linearGradient id="leftTL" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#0065FF"/>
+      <stop offset="100%" stop-color="#005CE8"/>
+    </linearGradient>
+    <linearGradient id="leftBL" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#005CE8"/>
+      <stop offset="100%" stop-color="#0048B5"/>
+    </linearGradient>
+    <linearGradient id="leftTR" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#0048B5"/>
+      <stop offset="100%" stop-color="#3384FF"/>
+    </linearGradient>
+    <linearGradient id="leftBR" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#005CE8"/>
+      <stop offset="100%" stop-color="#0048B5"/>
+    </linearGradient>
+
+    <!-- Right face gradients -->
+    <linearGradient id="rightTL" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#005CE8"/>
+      <stop offset="100%" stop-color="#0048B5"/>
+    </linearGradient>
+    <linearGradient id="rightBL" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#0048B5"/>
+      <stop offset="100%" stop-color="#00388C"/>
+    </linearGradient>
+    <linearGradient id="rightTR" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#00388C"/>
+      <stop offset="100%" stop-color="#002A6B"/>
+    </linearGradient>
+    <linearGradient id="rightBR" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#0048B5"/>
+      <stop offset="100%" stop-color="#00388C"/>
+    </linearGradient>
+
+    <!-- Arrow -->
+    <linearGradient id="arrowSh" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#FFFFFF"/>
+      <stop offset="100%" stop-color="#DEE4EA"/>
+    </linearGradient>
+    <filter id="shadow">
+      <feGaussianBlur stdDeviation="8"/>
+      <feOffset dx="0" dy="6"/>
+      <feComponentTransfer><feFuncA type="linear" slope="0.35"/></feComponentTransfer>
+    </filter>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="4" result="b"/>
+      <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+
+  <!-- Background -->
+  <rect x="0" y="0" width="512" height="512" rx="112" fill="url(#bgGrad)"/>
+
+  <!-- Drop shadow under cube cluster -->
+  <polygon points="151,195 256,275 361,195 361,375 256,455 151,375" fill="url(#bgGrad)" filter="url(#shadow)"/>
+
+  <!-- Large top face rhombus center: (256, 210) -->
+  <!-- Each sub-rhombus half-width=42, half-height=21 -->
+
+  <!-- == TOP FACES (4) == -->
+
+  <!-- Top-left top face -->
+  <polygon points="256,168 298,189 256,210 214,189" fill="url(#topTL)" stroke="#B0CFFF" stroke-width="0.8" stroke-linejoin="round"/>
+
+  <!-- Top-right top face -->
+  <polygon points="298,189 340,210 298,231 256,210" fill="url(#topTR)" stroke="#8AB8FF" stroke-width="0.8" stroke-linejoin="round"/>
+
+  <!-- Bottom-left top face -->
+  <polygon points="214,189 256,210 214,231 172,210" fill="url(#topBL)" stroke="#5498FF" stroke-width="0.8" stroke-linejoin="round"/>
+
+  <!-- Bottom-right top face -->
+  <polygon points="256,210 298,231 256,252 214,231" fill="url(#topBR)" stroke="#3384FF" stroke-width="0.8" stroke-linejoin="round"/>
+
+  <!-- == LEFT FACES (4) — 2 rows x 2 columns == -->
+
+  <!-- Top-left left face (row 1, col 1) -->
+  <polygon points="214,189 256,210 256,280 214,259" fill="url(#leftTL)" stroke="#0065FF" stroke-width="0.7" stroke-linejoin="round"/>
+
+  <!-- Top-right left face (row 1, col 2) — behind TL left face -->
+  <polygon points="172,210 214,231 214,301 172,280" fill="url(#leftTR)" stroke="#0048B5" stroke-width="0.7" stroke-linejoin="round"/>
+
+  <!-- Bottom-left left face (row 2, col 1) -->
+  <polygon points="256,210 298,231 298,301 256,280" fill="url(#leftBL)" stroke="#005CE8" stroke-width="0.7" stroke-linejoin="round"/>
+
+  <!-- Bottom-right left face (row 2, col 2) -->
+  <polygon points="214,231 256,252 256,322 214,301" fill="url(#leftBR)" stroke="#005CE8" stroke-width="0.7" stroke-linejoin="round"/>
+
+  <!-- == RIGHT FACES (4) — 2 rows x 2 columns == -->
+
+  <!-- Top-left right face (row 1, col 1) -->
+  <polygon points="256,210 298,189 298,259 256,280" fill="url(#rightTL)" stroke="#005CE8" stroke-width="0.7" stroke-linejoin="round"/>
+
+  <!-- Top-right right face (row 1, col 2) — behind TL right face -->
+  <polygon points="298,231 340,210 340,280 298,301" fill="url(#rightTR)" stroke="#00388C" stroke-width="0.7" stroke-linejoin="round"/>
+
+  <!-- Bottom-left right face (row 2, col 1) -->
+  <polygon points="298,189 340,210 340,280 298,259" fill="url(#rightBL)" stroke="#0048B5" stroke-width="0.7" stroke-linejoin="round"/>
+
+  <!-- Bottom-right right face (row 2, col 2) -->
+  <polygon points="256,252 298,231 298,301 256,322" fill="url(#rightBR)" stroke="#0048B5" stroke-width="0.7" stroke-linejoin="round"/>
+
+  <!-- == SHARE ARROW == -->
+
+  <!-- Arrow glow behind -->
+  <rect x="248" y="130" width="16" height="60" rx="8" fill="#8AB8FF" opacity="0.12"/>
+  <rect x="246" y="128" width="20" height="70" rx="10" fill="url(#arrowSh)"/>
+
+  <!-- Arrow head -->
+  <polygon points="256,96 232,136 280,136" fill="#FFFFFF" filter="url(#glow)"/>
+</svg>

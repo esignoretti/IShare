@@ -172,7 +172,7 @@ struct ShareSheetView: View {
         VStack(spacing: 16) {
             ProgressView(value: shareItem.progress) {
                 HStack {
-                    Image(systemName: statusIcon)
+                    statusIcon
                         .foregroundStyle(.secondary)
                     Text(statusText)
                         .font(.subheadline)
@@ -197,15 +197,15 @@ struct ShareSheetView: View {
         .padding(.vertical, 32)
     }
 
-    private var statusIcon: String {
+    private var statusIcon: Image {
         switch shareItem.state {
-        case .pending: return "clock"
-        case .compressing: return "archivebox"
-        case .encrypting: return "lock.shield"
-        case .uploading: return "arrow.up.circle"
-        case .generatingURL: return "link"
-        case .complete: return "checkmark.circle"
-        case .failed: return "exclamationmark.circle"
+        case .pending: return Image(systemName: "clock")
+        case .compressing: return Image(systemName: "archivebox")
+        case .encrypting: return Image(systemName: "lock.shield")
+        case .uploading: return .statusUploading
+        case .generatingURL: return Image(systemName: "link")
+        case .complete: return .statusSuccess
+        case .failed: return .statusError
         }
     }
 
@@ -223,9 +223,8 @@ struct ShareSheetView: View {
 
     private var successView: some View {
         VStack(spacing: 16) {
-            Image(systemName: "checkmark.circle.fill")
+            Image.statusSuccess
                 .font(.system(size: 48))
-                .foregroundStyle(.green)
 
             Text("Shared Successfully!")
                 .font(.title3)

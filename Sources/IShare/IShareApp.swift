@@ -121,7 +121,7 @@ struct IShareApp: App {
                 onBadgeUpdate: { _ in }
             )
         } label: {
-            Image(systemName: "square.and.arrow.up")
+            Image.menuBar
         }
         .menuBarExtraStyle(.window)
     }

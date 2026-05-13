@@ -15,6 +15,7 @@ struct ConfigView: View {
     @State private var showTFA: Bool = false
     @State private var tenant: String = ""
     @State private var coordinatorURL: String = CubbitAPIURLs.defaultCoordinatorURL
+    @State private var showAdvanced = false
 
     @State private var projects: [Project] = []
     @State private var selectedProject: Project?
@@ -68,19 +69,24 @@ struct ConfigView: View {
 
             Form {
                 Section {
-                    TextField("Coordinator URL", text: $coordinatorURL)
-                        .textFieldStyle(.roundedBorder)
-                        .help("Default: https://api.eu00wi.cubbit.services")
-
                     TextField("Email", text: $email)
                         .textFieldStyle(.roundedBorder)
 
                     SecureField("Password", text: $password)
                         .textFieldStyle(.roundedBorder)
 
-                    TextField("Tenant ID (optional)", text: $tenant)
-                        .textFieldStyle(.roundedBorder)
-                        .help("Leave empty for default tenant")
+                    DisclosureGroup("Advanced", isExpanded: $showAdvanced) {
+                        VStack(spacing: 8) {
+                            TextField("Coordinator URL", text: $coordinatorURL)
+                                .textFieldStyle(.roundedBorder)
+                                .help("Default: https://api.eu00wi.cubbit.services")
+
+                            TextField("Tenant ID (optional)", text: $tenant)
+                                .textFieldStyle(.roundedBorder)
+                                .help("Leave empty for default tenant")
+                        }
+                        .padding(.top, 4)
+                    }
 
                     if showTFA {
                         TextField("2FA Code", text: $tfaCode)
