@@ -72,7 +72,7 @@ final class DS3AuthService {
         let fileURL = persistenceURL.appendingPathComponent("ds3auth.json")
         guard FileManager.default.fileExists(atPath: fileURL.path) else { throw DS3AuthError.loggedOut }
         let data = try Data(contentsOf: fileURL)
-        let wrapper = try decoder.decode(PersistedAuth.self, from: data)
+        let wrapper = try tryDecode(PersistedAuth.self, from: data, tag: "loadFromDisk")
         return (wrapper.session, wrapper.account, wrapper.apiKey)
     }
 
@@ -83,6 +83,23 @@ final class DS3AuthService {
 
     init(urls: CubbitAPIURLs = CubbitAPIURLs()) {
         self.urls = urls
+    }
+
+    private func debugLog(_ tag: String, data: Data, response: URLResponse) {
+        #if DEBUG
+        let body = String(data: data, encoding: .utf8) ?? "<non-utf8>"
+        let code = (response as? HTTPURLResponse)?.statusCode ?? -1
+        print("[DS3Auth] \(tag): HTTP \(code) \(body.prefix(500))")
+        #endif
+    }
+
+    private func tryDecode<T: Decodable>(_ type: T.Type, from data: Data, tag: String) throws -> T {
+        do {
+            return try decoder.decode(type, from: data)
+        } catch {
+            let body = String(data: data, encoding: .utf8) ?? "<non-utf8>"
+            throw DS3AuthError.serverError(-1, "\(tag): \(error.localizedDescription) — body: \(body.prefix(300))")
+        }
     }
 
     // MARK: - Login
@@ -138,7 +155,8 @@ final class DS3AuthService {
         guard let newRefreshToken = cookies.first(where: { $0.name == "_refresh" })?.value else {
             throw DS3AuthError.serverError(-1, "no refresh cookie")
         }
-        let newToken = try decoder.decode(Token.self, from: data)
+        debugLog("refresh", data: data, response: response)
+        let newToken = try tryDecode(Token.self, from: data, tag: "refresh")
         session.refresh(token: newToken, refreshToken: newRefreshToken)
     }
 
@@ -159,7 +177,8 @@ final class DS3AuthService {
             let code = (response as? HTTPURLResponse)?.statusCode ?? -1
             throw DS3AuthError.serverError(code, String(data: data, encoding: .utf8) ?? "")
         }
-        return try decoder.decode(Challenge.self, from: data)
+        debugLog("getChallenge", data: data, response: response)
+        return try tryDecode(Challenge.self, from: data, tag: "challenge")
     }
 
     private func signChallenge(challenge: Challenge, password: String) throws -> String {
@@ -191,7 +210,8 @@ final class DS3AuthService {
         guard let httpResponse = response as? HTTPURLResponse else { throw DS3AuthError.serverError(-1, "no response") }
 
         if httpResponse.statusCode == 200 {
-            let token = try decoder.decode(Token.self, from: data)
+            debugLog("getAccountSession", data: data, response: response)
+            let token = try tryDecode(Token.self, from: data, tag: "session")
             guard let fields = httpResponse.allHeaderFields as? [String: String] else {
                 throw DS3AuthError.serverError(-1, "no headers")
             }
@@ -230,7 +250,7 @@ final class DS3AuthService {
             let code = (response as? HTTPURLResponse)?.statusCode ?? -1
             throw DS3AuthError.serverError(code, String(data: data, encoding: .utf8) ?? "")
         }
-        return try decoder.decode(Account.self, from: data)
+        return try tryDecode(Account.self, from: data, tag: "accountInfo")
     }
 
     // MARK: - Projects
@@ -252,7 +272,7 @@ final class DS3AuthService {
             let code = (response as? HTTPURLResponse)?.statusCode ?? -1
             throw DS3AuthError.serverError(code, String(data: data, encoding: .utf8) ?? "")
         }
-        return try decoder.decode([Project].self, from: data)
+        return try tryDecode([Project].self, from: data, tag: "projects")
     }
 
     // MARK: - API Keys
@@ -285,7 +305,8 @@ final class DS3AuthService {
             session.refresh(token: session.token, refreshToken: newRefresh)
         }
 
-        return try decoder.decode(Token.self, from: data)
+        debugLog("forgeIAMToken", data: data, response: response)
+        return try tryDecode(Token.self, from: data, tag: "forgeIAMToken")
     }
 
     private func loadOrCreateApiKey(for user: IAMUser, projectName: String) async throws -> DS3ApiKey {
@@ -313,7 +334,8 @@ final class DS3AuthService {
             let code = (response as? HTTPURLResponse)?.statusCode ?? -1
             throw DS3AuthError.serverError(code, String(data: data, encoding: .utf8) ?? "")
         }
-        return try decoder.decode([DS3ApiKey].self, from: data)
+        debugLog("fetchRemoteKeys", data: data, response: response)
+        return try tryDecode([DS3ApiKey].self, from: data, tag: "fetchRemoteKeys")
     }
 
     private func generateApiKey(for user: IAMUser, iamToken: Token, name: String) async throws -> DS3ApiKey {
@@ -329,7 +351,7 @@ final class DS3AuthService {
             let code = (response as? HTTPURLResponse)?.statusCode ?? -1
             throw DS3AuthError.serverError(code, String(data: data, encoding: .utf8) ?? "")
         }
-        return try decoder.decode(DS3ApiKey.self, from: data)
+        return try tryDecode(DS3ApiKey.self, from: data, tag: "generateApiKey")
     }
 }
 

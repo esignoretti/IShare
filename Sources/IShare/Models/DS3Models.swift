@@ -50,8 +50,8 @@ struct Token: Codable, Sendable {
         token = try container.decode(String.self, forKey: .token)
         exp = try container.decode(Int64.self, forKey: .exp)
         let expDateString = try container.decode(String.self, forKey: .expDate)
-        guard let date = ISO8601DateFormatter().date(from: expDateString) else {
-            throw DecodingError.dataCorruptedError(forKey: .expDate, in: container, debugDescription: "Invalid date")
+        guard let date = parseDS3Date(expDateString) else {
+            throw DecodingError.dataCorruptedError(forKey: .expDate, in: container, debugDescription: "Invalid date: \(expDateString)")
         }
         expDate = date
     }
@@ -60,7 +60,7 @@ struct Token: Codable, Sendable {
         var container = encoder.container(keyedBy: CodingKeys.self)
         try container.encode(token, forKey: .token)
         try container.encode(exp, forKey: .exp)
-        try container.encode(ISO8601DateFormatter().string(from: expDate), forKey: .expDate)
+        try container.encode(ds3DateFormatter.string(from: expDate), forKey: .expDate)
     }
 }
 
@@ -121,11 +121,12 @@ struct DS3ApiKey: Codable, Equatable, Sendable {
         name = try container.decode(String.self, forKey: .name)
         apiKey = try container.decode(String.self, forKey: .apiKey)
         secretKey = try? container.decode(String.self, forKey: .secretKey)
-        let dateString = try container.decode(String.self, forKey: .createdAt)
-        guard let date = ISO8601DateFormatter().date(from: dateString) else {
-            throw DecodingError.dataCorruptedError(forKey: .createdAt, in: container, debugDescription: "Invalid date")
+        if let dateString = try? container.decode(String.self, forKey: .createdAt),
+           let date = parseDS3Date(dateString) {
+            createdAt = date
+        } else {
+            createdAt = Date()
         }
-        createdAt = date
     }
 
     func encode(to encoder: Encoder) throws {
@@ -133,7 +134,7 @@ struct DS3ApiKey: Codable, Equatable, Sendable {
         try container.encode(name, forKey: .name)
         try container.encode(apiKey, forKey: .apiKey)
         try container.encodeIfPresent(secretKey, forKey: .secretKey)
-        try container.encode(ISO8601DateFormatter().string(from: createdAt), forKey: .createdAt)
+        try container.encode(ds3DateFormatter.string(from: createdAt), forKey: .createdAt)
     }
 }
 
