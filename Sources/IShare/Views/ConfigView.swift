@@ -191,7 +191,7 @@ struct ConfigView: View {
                         .textFieldStyle(.roundedBorder)
                         .help("Bucket will be auto-created if it doesn't exist")
                 } header: {
-                    Text("S3 Bucket")
+                    Text("DS3 Bucket")
                 }
             }
             .formStyle(.grouped)

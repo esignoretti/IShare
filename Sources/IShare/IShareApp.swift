@@ -100,7 +100,7 @@ struct IShareApp: App {
         .windowStyle(.hiddenTitleBar)
         .commands {
             CommandGroup(after: .appSettings) {
-                Button("S3 Configuration...") {
+                Button("DS3 Configuration...") {
                     openSettings()
                 }
                 .keyboardShortcut(",", modifiers: .command)
@@ -138,7 +138,7 @@ struct IShareApp: App {
             backing: .buffered,
             defer: false
         )
-        window.title = "S3 Configuration"
+        window.title = "DS3 Configuration"
         window.isReleasedWhenClosed = false
         window.animationBehavior = .none
         window.contentView = NSHostingView(rootView: settingsView)

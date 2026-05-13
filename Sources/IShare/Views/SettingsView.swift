@@ -13,7 +13,7 @@ struct SettingsView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            Text("S3 Bucket Configuration")
+            Text("DS3 Bucket Configuration")
                 .font(.title2)
                 .fontWeight(.semibold)
                 .padding(.vertical, 16)
@@ -36,7 +36,7 @@ struct SettingsView: View {
                     TextField("Region", text: $region)
                         .textFieldStyle(.roundedBorder)
                 } header: {
-                    Text("S3 Bucket")
+                    Text("DS3 Bucket")
                 }
             }
             .formStyle(.grouped)
