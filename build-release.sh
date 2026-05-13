@@ -30,7 +30,7 @@ create_app_bundle() {
     cp "$PROJECT_DIR/Sources/IShare/Info.plist" "$APP_BUNDLE/Contents/Info.plist"
 
     cp "$PROJECT_DIR/Sources/IShare/Resources/Icons/"*.png "$APP_BUNDLE/Contents/Resources/"
-    cp "$PROJECT_DIR/Sources/IShare/Resources/Icons/"*.icns "$APP_BUNDLE/Contents/Resources/"
+    cp "$PROJECT_DIR/Sources/IShare/Resources/Icons/IShare.icns" "$APP_BUNDLE/Contents/Resources/"
 }
 
 codesign_app() {
@@ -99,6 +99,14 @@ create_dmg() {
 
     cp -R "$APP_BUNDLE" "$dmg_tmp/"
     ln -s /Applications "$dmg_tmp/Applications"
+
+    cp "$PROJECT_DIR/Icons/output/IShare.icns" "$dmg_tmp/.VolumeIcon.icns"
+    /usr/bin/python3 -c "
+import Cocoa, sys
+ws = Cocoa.NSWorkspace.sharedWorkspace()
+img = Cocoa.NSImage.alloc().initWithContentsOfFile_(sys.argv[1])
+if img: ws.setIcon_forFile_options_(img, sys.argv[2], 0)
+" "$PROJECT_DIR/Icons/output/IShare.icns" "$dmg_tmp" 2>/dev/null || true
 
     local bg_path="$tmp_dir/background.png"
     if generate_dmg_background "$bg_path" 2>/dev/null; then
