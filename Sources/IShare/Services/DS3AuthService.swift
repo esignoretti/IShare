@@ -310,7 +310,10 @@ final class DS3AuthService {
 
         let remoteKeys = try await fetchRemoteKeys(for: user, iamToken: iamToken)
         if let existing = remoteKeys.first(where: { $0.name == apiKeyName }) {
-            return existing
+            if existing.secretKey != nil {
+                return existing
+            }
+            try await deleteApiKey(existing, for: user, iamToken: iamToken)
         }
 
         return try await generateApiKey(for: user, iamToken: iamToken, name: apiKeyName)
@@ -347,6 +350,23 @@ final class DS3AuthService {
             throw DS3AuthError.serverError(code, String(data: data, encoding: .utf8) ?? "")
         }
         return try tryDecode(DS3ApiKey.self, from: data, tag: "generateApiKey")
+    }
+
+    private func deleteApiKey(_ apiKey: DS3ApiKey, for user: IAMUser, iamToken: Token) async throws {
+        guard let encoded = apiKey.apiKey.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed),
+              let url = URL(string: "\(urls.keysURL)/\(encoded)?user_id=\(user.id)") else {
+            throw DS3AuthError.invalidURL(urls.keysURL)
+        }
+        var request = URLRequest(url: url)
+        request.allHTTPHeaderFields = ["Authorization": "Bearer \(iamToken.token)"]
+        request.httpMethod = "DELETE"
+
+        let (data, response) = try await URLSession.shared.data(for: request)
+        guard let httpResponse = response as? HTTPURLResponse,
+              httpResponse.statusCode == 200 || httpResponse.statusCode == 204 else {
+            let code = (response as? HTTPURLResponse)?.statusCode ?? -1
+            throw DS3AuthError.serverError(code, String(data: data, encoding: .utf8) ?? "")
+        }
     }
 }
 
