@@ -1,4 +1,5 @@
 import SwiftUI
+import UniformTypeIdentifiers
 
 extension Notification.Name {
     static let shareFileReceived = Notification.Name("com.isare.shareFileReceived")
@@ -170,17 +171,19 @@ struct MainContentView: View {
     @ObservedObject var configStore: ConfigStore
     let onShareFile: (URL) -> Void
 
+    @State private var isDropTargeted = false
+
     var body: some View {
         VStack(spacing: 16) {
             Image(systemName: "checkmark.circle.fill")
                 .font(.system(size: 48))
                 .foregroundStyle(.green)
 
-            Text("Connected to S3")
+            Text("Connected to DS3")
                 .font(.title)
                 .fontWeight(.semibold)
 
-            Text("Use the Share menu, right-click a file in Finder, or press \u{2318}\u{21E7}N to share via IShare.")
+            Text("Drop a file or folder, use the Share menu, right-click in Finder, or press \u{2318}\u{21E7}N.")
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
@@ -204,5 +207,21 @@ struct MainContentView: View {
             .padding(.top, 8)
         }
         .frame(width: 400, height: 320)
+        .background(isDropTargeted ? Color.accentColor.opacity(0.08) : Color.clear)
+        .overlay(
+            RoundedRectangle(cornerRadius: 12)
+                .stroke(isDropTargeted ? Color.accentColor : Color.clear, lineWidth: 2)
+        )
+        .onDrop(of: [.fileURL], isTargeted: $isDropTargeted) { providers in
+            guard let provider = providers.first else { return false }
+            provider.loadItem(forTypeIdentifier: "public.file-url", options: nil) { item, _ in
+                guard let data = item as? Data,
+                      let url = URL(dataRepresentation: data, relativeTo: nil) else { return }
+                DispatchQueue.main.async {
+                    onShareFile(url)
+                }
+            }
+            return true
+        }
     }
 }
