@@ -135,6 +135,8 @@ struct IShareApp: App {
             defer: false
         )
         window.title = "S3 Configuration"
+        window.isReleasedWhenClosed = false
+        window.animationBehavior = .none
         window.contentView = NSHostingView(rootView: settingsView)
         window.center()
         window.makeKeyAndOrderFront(nil)

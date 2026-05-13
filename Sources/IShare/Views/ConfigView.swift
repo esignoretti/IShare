@@ -14,6 +14,7 @@ struct ConfigView: View {
     @State private var tfaCode: String = ""
     @State private var showTFA: Bool = false
     @State private var tenant: String = ""
+    @State private var coordinatorURL: String = CubbitAPIURLs.defaultCoordinatorURL
 
     @State private var projects: [Project] = []
     @State private var selectedProject: Project?
@@ -67,6 +68,10 @@ struct ConfigView: View {
 
             Form {
                 Section {
+                    TextField("Coordinator URL", text: $coordinatorURL)
+                        .textFieldStyle(.roundedBorder)
+                        .help("Default: https://api.eu00wi.cubbit.services")
+
                     TextField("Email", text: $email)
                         .textFieldStyle(.roundedBorder)
 
@@ -266,7 +271,8 @@ struct ConfigView: View {
                 email: email,
                 password: password,
                 tfaCode: tfaCode.isEmpty ? nil : tfaCode,
-                tenant: tenant.isEmpty ? nil : tenant
+                tenant: tenant.isEmpty ? nil : tenant,
+                coordinatorURL: coordinatorURL.isEmpty ? nil : coordinatorURL
             )
 
             let fetched = try await configStore.ds3Auth.fetchProjects()

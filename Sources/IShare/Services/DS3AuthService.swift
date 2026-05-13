@@ -35,7 +35,7 @@ enum DS3AuthError: Error, LocalizedError {
 
 @MainActor
 final class DS3AuthService {
-    private let urls: CubbitAPIURLs
+    private var urls: CubbitAPIURLs
     private var session: AccountSession?
     private var account: Account?
     private var apiKey: DS3ApiKey?
@@ -104,7 +104,10 @@ final class DS3AuthService {
 
     // MARK: - Login
 
-    func login(email: String, password: String, tfaCode: String? = nil, tenant: String? = nil) async throws {
+    func login(email: String, password: String, tfaCode: String? = nil, tenant: String? = nil, coordinatorURL: String? = nil) async throws {
+        if let url = coordinatorURL {
+            urls = CubbitAPIURLs(coordinatorURL: url)
+        }
         let challenge = try await getChallenge(email: email, tenant: tenant)
         let signedChallenge = try signChallenge(challenge: challenge, password: password)
         let session = try await getAccountSession(email: email, signedChallenge: signedChallenge, tfaCode: tfaCode, tenant: tenant)
