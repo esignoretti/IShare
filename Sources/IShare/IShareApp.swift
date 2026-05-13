@@ -119,7 +119,10 @@ struct IShareApp: App {
             MenuBarTrayView(
                 historyStore: historyStore,
                 s3Service: s3Service,
-                onBadgeUpdate: { _ in }
+                onBadgeUpdate: { _ in },
+                onShareFile: { url in
+                    presentShareWindow(for: url, autoStart: false)
+                }
             )
         } label: {
             Image.menuBar

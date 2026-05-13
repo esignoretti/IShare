@@ -5,13 +5,42 @@ struct MenuBarTrayView: View {
     @ObservedObject var historyStore: ShareHistoryStore
     let s3Service: S3Service
     let onBadgeUpdate: (Int) -> Void
+    let onShareFile: ((URL) -> Void)?
 
     @State private var deletingIDs: Set<UUID> = []
     @State private var errorMessage: String?
     @State private var showError = false
 
+    init(historyStore: ShareHistoryStore, s3Service: S3Service, onBadgeUpdate: @escaping (Int) -> Void, onShareFile: ((URL) -> Void)? = nil) {
+        self.historyStore = historyStore
+        self.s3Service = s3Service
+        self.onBadgeUpdate = onBadgeUpdate
+        self.onShareFile = onShareFile
+    }
+
     var body: some View {
         VStack(spacing: 0) {
+            Button {
+                let panel = NSOpenPanel()
+                panel.canChooseFiles = true
+                panel.canChooseDirectories = true
+                panel.allowsMultipleSelection = false
+                panel.title = "Select a file to share"
+                panel.begin { response in
+                    if response == .OK, let url = panel.url {
+                        onShareFile?(url)
+                    }
+                }
+            } label: {
+                Label("Share File...", systemImage: "square.and.arrow.up")
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
+            .buttonStyle(.plain)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 8)
+
+            Divider()
+
             if historyStore.records.isEmpty {
                 VStack(spacing: 8) {
                     Image(systemName: "tray")
