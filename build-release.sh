@@ -160,7 +160,7 @@ upload_dmg() {
     local download_url
     download_url=$(/usr/bin/python3 "$PROJECT_DIR/scripts/upload-dmg.py" "$DMG_PATH" "$object_key" 2>&1 | tail -1)
 
-    if [ -n "$download_url" ] && echo "$download_url" | grep -q "^https://"; then
+    if [ -n "$download_url" ] && echo "$download_url" | grep -q "^https://s3.cubbit.eu/"; then
         echo "  \u2713 Upload successful"
         echo "  Download URL: $download_url"
         /usr/bin/python3 -c "

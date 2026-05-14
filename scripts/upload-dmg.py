@@ -89,6 +89,7 @@ def main():
     headers = {"Content-Type": content_type, "Content-Length": str(len(body))}
 
     print(f"=== Uploading {filepath} to {url} ===")
+    headers["x-amz-acl"] = "public-read"
     sign("PUT", path, headers, body, timestamp)
     req = urllib.request.Request(url, data=body, headers=headers, method="PUT")
     try:
@@ -98,9 +99,8 @@ def main():
         print(f"  Upload failed: HTTP {e.code} {e.read().decode()}")
         sys.exit(1)
 
-    download_url = presign("GET", path, 604_800, timestamp)
-    print(f"  Download URL (valid 90 days): {download_url}")
-    print(download_url)
+    print(f"  Download URL: {ENDPOINT}{path}")
+    print(f"{ENDPOINT}{path}")
 
 if __name__ == "__main__":
     main()
