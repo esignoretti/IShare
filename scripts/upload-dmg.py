@@ -10,7 +10,10 @@ ENDPOINT = "https://s3.cubbit.eu"
 REGION = "us-east-1"
 SERVICE = "s3"
 
-def sha256(data):
+RFC3986_UNRESERVED = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~"
+
+def uri_encode(s):
+    return urllib.parse.quote(s, safe=RFC3986_UNRESERVED)
     return hashlib.sha256(data).digest()
 
 def hex_sha256(data):
@@ -59,7 +62,7 @@ def presign(method, path, expires_seconds, timestamp):
         ("X-Amz-SignedHeaders", "host"),
     ]
     params.sort()
-    canonical_qs = "&".join(f"{urllib.parse.quote(k, safe='~')}={urllib.parse.quote(v, safe='~')}" for k, v in params)
+    canonical_qs = "&".join(f"{uri_encode(k)}={uri_encode(v)}" for k, v in params)
     canonical_headers = f"host:{host}\n"
     signed_headers = "host"
     payload_hash = "UNSIGNED-PAYLOAD"
@@ -95,7 +98,7 @@ def main():
         print(f"  Upload failed: HTTP {e.code} {e.read().decode()}")
         sys.exit(1)
 
-    download_url = presign("GET", path, 90 * 86400, timestamp)
+    download_url = presign("GET", path, 604_800, timestamp)
     print(f"  Download URL (valid 90 days): {download_url}")
     print(download_url)
 

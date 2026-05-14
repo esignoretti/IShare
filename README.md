@@ -4,7 +4,7 @@ macOS native menu bar app for sharing large files via Cubbit DS3. Right-click an
 
 ## Download
 
-[Download Latest DMG](https://s3.cubbit.eu/packages/IShare/IShare-1.0.1.dmg?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=lLhwVfQ7Ajet2GLTZPWdDp%2FS46qqAt2U%2F20260514%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20260514T183846Z&X-Amz-Expires=7776000&X-Amz-SignedHeaders=host&X-Amz-Signature=048e04179b0565d9131cf1b30fe9eaec107eca13e2246184f5f8eba452a70fce)
+[Download Latest DMG](https://s3.cubbit.eu/packages/IShare/IShare-1.0.1.dmg?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=lLhwVfQ7Ajet2GLTZPWdDp%2FS46qqAt2U%2F20260514%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20260514T184440Z&X-Amz-Expires=604800&X-Amz-SignedHeaders=host&X-Amz-Signature=871fca14c61c35977b23549d2ad33a69ce6049abe5f65c5842cab8f011d67547)
 
 ## Features
 
