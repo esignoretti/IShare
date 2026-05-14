@@ -169,7 +169,7 @@ path = sys.argv[1]
 url = sys.argv[2]
 with open(path) as f:
     content = f.read()
-content = content.replace('[DOWNLOAD_LINK_PLACEHOLDER]', url)
+content = content.replace('DOWNLOAD_LINK_PLACEHOLDER', url)
 with open(path, 'w') as f:
     f.write(content)
 " "$PROJECT_DIR/README.md" "$download_url"
