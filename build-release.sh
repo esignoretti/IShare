@@ -150,6 +150,26 @@ if img: ws.setIcon_forFile_options_(img, sys.argv[2], 0)
     echo "DMG: $DMG_PATH ($(du -h "$DMG_PATH" | awk '{print $1}'))"
 }
 
+upload_dmg() {
+    echo "=== Uploading DMG to Cubbit DS3 ==="
+    local version
+    version=$(defaults read "$PROJECT_DIR/Sources/IShare/Info.plist" CFBundleShortVersionString 2>/dev/null || echo "latest")
+    local object_key="IShare/IShare-${version}.dmg"
+
+    echo "Uploading to packages/${object_key}..."
+    local download_url
+    download_url=$(/usr/bin/python3 "$PROJECT_DIR/scripts/upload-dmg.py" "$DMG_PATH" "$object_key" 2>&1 | tail -1)
+
+    if [ -n "$download_url" ] && echo "$download_url" | grep -q "^https://"; then
+        echo "  \u2713 Upload successful"
+        echo "  Download URL: $download_url"
+        echo "$download_url" > "$PROJECT_DIR/LATEST_DMG_URL.txt"
+        echo "  \u2713 URL saved to LATEST_DMG_URL.txt"
+    else
+        echo "  WARNING: Upload may have failed"
+    fi
+}
+
 cd "$PROJECT_DIR"
 
 if [ "${1:-}" = "--dmg" ]; then
@@ -158,6 +178,7 @@ if [ "${1:-}" = "--dmg" ]; then
     create_app_bundle
     codesign_app
     create_dmg
+    upload_dmg
 else
     clean_artifacts
     build_release
@@ -167,4 +188,5 @@ else
     echo "=== Build complete ==="
     echo "App bundle: $APP_BUNDLE"
     echo "To create DMG, run: bash build-release.sh --dmg"
+
 fi
