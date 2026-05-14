@@ -4,7 +4,7 @@ macOS native menu bar app for sharing large files via Cubbit DS3. Right-click an
 
 ## Download
 
-The latest release DMG is available at the URL in [`LATEST_DMG_URL.txt`](LATEST_DMG_URL.txt) (presigned URL, valid 90 days).
+https://s3.cubbit.eu/packages/IShare/IShare-1.0.1.dmg?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=lLhwVfQ7Ajet2GLTZPWdDp%2FS46qqAt2U%2F20260514%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20260514T183539Z&X-Amz-Expires=7776000&X-Amz-SignedHeaders=host&X-Amz-Signature=a0fa4a37602c3ce72d26a940ad6278b0aa27a3dc9d005111d8ab2e04dd6b3d1e
 
 ## Features
 

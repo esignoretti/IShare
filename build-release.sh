@@ -163,8 +163,17 @@ upload_dmg() {
     if [ -n "$download_url" ] && echo "$download_url" | grep -q "^https://"; then
         echo "  \u2713 Upload successful"
         echo "  Download URL: $download_url"
-        echo "$download_url" > "$PROJECT_DIR/LATEST_DMG_URL.txt"
-        echo "  \u2713 URL saved to LATEST_DMG_URL.txt"
+        /usr/bin/python3 -c "
+import sys
+path = sys.argv[1]
+url = sys.argv[2]
+with open(path) as f:
+    content = f.read()
+content = content.replace('[DOWNLOAD_LINK_PLACEHOLDER]', url)
+with open(path, 'w') as f:
+    f.write(content)
+" "$PROJECT_DIR/README.md" "$download_url"
+        echo "  \u2713 README.md updated with download URL"
     else
         echo "  WARNING: Upload may have failed"
     fi

@@ -1,1 +1,0 @@
-https://s3.cubbit.eu/packages/IShare/IShare-1.0.1.dmg?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=lLhwVfQ7Ajet2GLTZPWdDp%2FS46qqAt2U%2F20260514%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20260514T183212Z&X-Amz-Expires=7776000&X-Amz-SignedHeaders=host&X-Amz-Signature=26a86bbe1afe0b7deba6c5ba7a82cab8966383d6bbfd44c5cfba0407eb3d58d5
